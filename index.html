@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Roboto+Condensed:wght@400;700;900&family=Oswald:wght@500;700&family=Cairo:wght@600;800&family=Noto+Kufi+Arabic:wght@600;800&display=swap">
 <style>
 /* Layout: work bench on one side (case entry, queue, settings), live A4 sheet preview on the other. Palette borrowed from H&E: hematoxylin violet + eosin pink. */
 :root{
@@ -116,16 +116,16 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .cell.calib::before{left:50%;top:35%;bottom:35%;width:0.15mm}
 .cell.calib::after{top:50%;left:35%;right:35%;height:0.15mm}
 
-.lbl{position:absolute;color:var(--paper-ink);background:var(--paper);font-family:var(--f-label);padding:0.7mm 0.9mm;display:flex;flex-direction:column;overflow:hidden;line-height:1.08;--k:1}
+.lbl{position:absolute;color:var(--paper-ink);background:var(--paper);font-family:var(--lf-text,Arial),Arial,Tahoma,sans-serif;padding:0.7mm 0.9mm;display:flex;flex-direction:column;overflow:hidden;line-height:1.08}
 .lbl.cutline{outline:0.15mm solid #b5b5b5;outline-offset:-0.075mm}
 .lbl.pick{cursor:pointer}
-.l-lab{font-size:calc(4.4pt*var(--k));font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:clip;border-bottom:0.2mm solid #000;padding-bottom:0.3mm;margin-bottom:0.4mm;text-align:center;letter-spacing:.02em}
-.l-name{font-size:calc(6.6pt*var(--k));font-weight:700;flex:1 1 auto;min-height:0;overflow:hidden;overflow-wrap:anywhere;text-align:center;display:flex;align-items:center;justify-content:center}
-.l-case{font-size:calc(10.5pt*var(--k));font-weight:900;white-space:nowrap;overflow:hidden;text-align:center;letter-spacing:.01em;font-variant-numeric:tabular-nums}
-.l-case.big{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;font-size:calc(13.5pt*var(--k))}
-.l-blk{display:flex;justify-content:center;gap:1.4mm;font-size:calc(8.6pt*var(--k));font-weight:900;white-space:nowrap}
+.l-lab{font-size:var(--sz-lab);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:clip;border-bottom:0.2mm solid #000;padding-bottom:0.3mm;margin-bottom:0.4mm;text-align:center;letter-spacing:.02em}
+.l-name{font-size:var(--sz-name);font-weight:var(--w-name);flex:1 1 auto;min-height:0;overflow:hidden;overflow-wrap:anywhere;text-align:center;display:flex;align-items:center;justify-content:center}
+.l-case{font-family:var(--lf-num,Arial),Arial,sans-serif;font-size:var(--sz-case);font-weight:var(--w-case);white-space:nowrap;overflow:hidden;text-align:center;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.l-case.big{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;font-size:var(--sz-big)}
+.l-blk{display:flex;justify-content:center;gap:1.4mm;font-family:var(--lf-num,Arial),Arial,sans-serif;font-size:var(--sz-blk);font-weight:900;white-space:nowrap}
 .l-blk .lv{border:0.25mm solid #000;border-radius:0.6mm;padding:0 0.6mm}
-.l-ft{display:flex;justify-content:space-between;gap:1mm;font-size:calc(5pt*var(--k));font-weight:700;margin-top:0.4mm;white-space:nowrap;overflow:hidden}
+.l-ft{display:flex;justify-content:space-between;gap:1mm;font-size:var(--sz-ft);font-weight:700;margin-top:0.4mm;white-space:nowrap;overflow:hidden}
 
 .setgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .checks{display:flex;flex-direction:column;gap:7px;margin-top:12px;font-size:13px}
@@ -259,6 +259,29 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       <button class="btn small" type="button" id="rangeAdd">أضف السلسلة إلى القائمة</button>
     </details>
 
+    <details class="panel" id="fontPanel">
+      <summary>الخطوط وأحجامها</summary>
+      <div class="setgrid">
+        <label class="f">خط رقم العينة والكاسيت<select id="set_fNum"><option value="Arial">Arial</option><option value="Arial Narrow">Arial Narrow (ويندوز)</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Calibri">Calibri (ويندوز)</option><option value="Segoe UI">Segoe UI (ويندوز)</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Consolas">Consolas (ويندوز)</option><option value="Roboto Condensed">Roboto Condensed</option><option value="Oswald">Oswald</option><option value="IBM Plex Mono">IBM Plex Mono</option><option value="Cairo">Cairo (عربي)</option><option value="Noto Kufi Arabic">Noto Kufi Arabic (عربي)</option><option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic (عربي)</option></select></label>
+        <label class="f">خط الاسم والنصوص<select id="set_fText"><option value="Arial">Arial</option><option value="Arial Narrow">Arial Narrow (ويندوز)</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Calibri">Calibri (ويندوز)</option><option value="Segoe UI">Segoe UI (ويندوز)</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Consolas">Consolas (ويندوز)</option><option value="Roboto Condensed">Roboto Condensed</option><option value="Oswald">Oswald</option><option value="IBM Plex Mono">IBM Plex Mono</option><option value="Cairo">Cairo (عربي)</option><option value="Noto Kufi Arabic">Noto Kufi Arabic (عربي)</option><option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic (عربي)</option></select></label>
+        <label class="f">رقم العينة (pt)<input type="number" step="0.5" min="3" max="30" id="set_szCase"></label>
+        <label class="f">رقم العينة بدون اسم (pt)<input type="number" step="0.5" min="3" max="30" id="set_szBig"></label>
+        <label class="f">اسم المريض (pt)<input type="number" step="0.5" min="3" max="20" id="set_szName"></label>
+        <label class="f">الكاسيت والمستوى (pt)<input type="number" step="0.5" min="3" max="20" id="set_szBlk"></label>
+        <label class="f">اسم المختبر (pt)<input type="number" step="0.5" min="3" max="12" id="set_szLab"></label>
+        <label class="f">الصبغة والتاريخ (pt)<input type="number" step="0.5" min="3" max="12" id="set_szFt"></label>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="set_boldCase"> رقم العينة عريض</label>
+        <label><input type="checkbox" id="set_boldName"> الاسم عريض</label>
+        <label><input type="checkbox" id="set_autofit"> تصغير تلقائي إذا لم يتسع النص</label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn small ghost" type="button" id="fitSizes">أحجام مناسبة لقياس الملصق</button>
+      </div>
+      <p class="hint" style="margin-top:8px">الخطوط المكتوب بجانبها (ويندوز) تعمل فقط إذا كانت مثبتة على الجهاز. باقي الخطوط تُحمّل من الإنترنت.</p>
+    </details>
+
     <details class="panel" id="setPanel">
       <summary>إعدادات الملصق والورقة</summary>
       <div class="setgrid">
@@ -281,7 +304,6 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
         <label class="f">صفوف (0 = تلقائي)<input type="number" min="0" id="set_rows"></label>
         <label class="f">إزاحة معايرة X (مم)<input type="number" step="0.1" id="set_offX"></label>
         <label class="f">إزاحة معايرة Y (مم)<input type="number" step="0.1" id="set_offY"></label>
-        <label class="f">حجم الخط<input type="number" step="0.05" min="0.6" max="1.6" id="set_fs"></label>
         <label class="f" style="grid-column:1/-1">اسم المختبر على الملصق<input type="text" id="set_lab" dir="auto"></label>
       </div>
       <div class="checks">
@@ -336,7 +358,8 @@ const store={
   get(k,d){try{const v=localStorage.getItem('slp_'+k);return v?JSON.parse(v):d}catch(e){return d}},
   set(k,v){try{localStorage.setItem('slp_'+k,JSON.stringify(v))}catch(e){}}
 };
-const DEF={lw:22,lh:22,ml:8,mt:8,gx:2,gy:2,cols:0,rows:0,offX:0,offY:0,fs:1,
+const DEF={lw:22,lh:22,ml:8,mt:8,gx:2,gy:2,cols:0,rows:0,offX:0,offY:0,
+  fNum:'Arial',fText:'Arial',szLab:4.5,szCase:10.5,szBig:13.5,szName:6.5,szBlk:8.5,szFt:5,boldCase:true,boldName:true,autofit:true,
   lab:'JUH · Histopathology',showLab:true,showDate:true,lvlSingle:false,upper:true,cut:true};
 let S=Object.assign({},DEF,store.get('settings',{}));
 const YY=String(new Date().getFullYear()).slice(-2);
@@ -398,11 +421,10 @@ function today(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'
 function labelHTML(sl,st,i,pick){
   const c=sl.c; let name=c.name||'';
   if(S.upper&&!/[؀-ۿ]/.test(name))name=name.toUpperCase();
-  const k=(Math.min(+S.lw,+S.lh*1.1)/22)*(+S.fs||1);
-  return `<div class="lbl${S.cut?' cutline':''}${pick?' pick':''}" ${pick?`data-i="${i}"`:''} style="${st};--k:${k.toFixed(3)}">`+
+  return `<div class="lbl${S.cut?' cutline':''}${pick?' pick':''}" ${pick?`data-i="${i}"`:''} style="${st}">`+
     (S.showLab&&S.lab?`<div class="l-lab">${esc(S.lab)}</div>`:'')+
-    (name?`<div class="l-name fit" dir="auto">${esc(name)}</div>`:'')+
     `<div class="l-case fit${name?'':' big'}">${esc(caseNo(c))}</div>`+
+    (name?`<div class="l-name fit" dir="auto">${esc(name)}</div>`:'')+
     `<div class="l-blk">${sl.block?`<span>${esc(sl.block)}</span>`:''}${sl.level?`<span class="lv">${sl.level}</span>`:''}</div>`+
     `<div class="l-ft"><span>${esc(sl.stain)}</span>${S.showDate?`<span>${today()}</span>`:''}</div></div>`;
 }
@@ -434,9 +456,16 @@ function render(){
   $('#skipIn').value=skip+1; $('#skipIn').max=g.per;
   fitText(); scaleSheets();
 }
+function applyFonts(){
+  const r=document.documentElement.style, q=f=>'"'+String(f).replace(/"/g,'')+'"';
+  r.setProperty('--lf-num',q(S.fNum)); r.setProperty('--lf-text',q(S.fText));
+  [['lab','szLab'],['case','szCase'],['big','szBig'],['name','szName'],['blk','szBlk'],['ft','szFt']].forEach(([v,k])=>r.setProperty('--sz-'+v,(+S[k]||5)+'pt'));
+  r.setProperty('--w-case',S.boldCase?900:400); r.setProperty('--w-name',S.boldName?700:400);
+}
 function fitText(){
   document.querySelectorAll('.lbl .fit').forEach(el=>{
     el.style.fontSize='';
+    if(!S.autofit)return;
     let fs=parseFloat(getComputedStyle(el).fontSize),n=0;
     while((el.scrollHeight>el.clientHeight+0.5||el.scrollWidth>el.clientWidth+0.5)&&fs>5&&n<50){fs-=0.35;el.style.fontSize=fs+'px';n++}
   });
@@ -612,15 +641,18 @@ $('#rangeAdd').onclick=()=>{
 };
 
 /* ---------- settings ---------- */
-const NUMS=['lw','lh','ml','mt','gx','gy','cols','rows','offX','offY','fs'], BOOLS=['showLab','showDate','lvlSingle','upper','cut'];
+const NUMS=['lw','lh','ml','mt','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szFt'], BOOLS=['showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','autofit'], SELS=['fNum','fText'];
 function loadSettingsUI(){
-  NUMS.forEach(k=>$('#set_'+k).value=S[k]); BOOLS.forEach(k=>$('#set_'+k).checked=!!S[k]); $('#set_lab').value=S.lab;
+  NUMS.forEach(k=>$('#set_'+k).value=S[k]); BOOLS.forEach(k=>$('#set_'+k).checked=!!S[k]); SELS.forEach(k=>$('#set_'+k).value=S[k]); $('#set_lab').value=S.lab; applyFonts();
   const key=S.lw+'x'+S.lh; $('#preset').value=[...$('#preset').options].some(o=>o.value===key)?key:'custom';
 }
 NUMS.forEach(k=>$('#set_'+k).addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){S[k]=v;if(k==='lw'||k==='lh')loadSettingsUI();save();render();renderQueue()}}));
 BOOLS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.checked;save();render();renderQueue()}));
 $('#set_lab').addEventListener('input',e=>{S.lab=e.target.value;save();render()});
-$('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;loadSettingsUI();save();render()});
+SELS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.value;applyFonts();save();render();if(document.fonts)document.fonts.load('10pt "'+S[k]+'"').then(fitText,()=>{})}));
+function sizesFor(w,h){const k=Math.min(w,h*1.1)/22,r=v=>Math.round(v*k*2)/2;return {szLab:r(4.5),szCase:r(10.5),szBig:r(13.5),szName:r(6.5),szBlk:r(8.5),szFt:r(5)}}
+$('#fitSizes').onclick=()=>{Object.assign(S,sizesFor(+S.lw,+S.lh));loadSettingsUI();save();render()};
+$('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;Object.assign(S,sizesFor(w,h));loadSettingsUI();save();render()});
 $('#resetSet').onclick=()=>{S=Object.assign({},DEF);loadSettingsUI();save();render();renderQueue()};
 
 /* ---------- print ---------- */
