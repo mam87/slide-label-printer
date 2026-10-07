@@ -119,7 +119,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .cell.calib::after{top:50%;left:35%;right:35%;height:0.15mm}
 
 .lbl{position:absolute;color:var(--paper-ink);background:var(--paper);font-family:var(--lf-text,Arial),Arial,Tahoma,sans-serif;padding:0.7mm 0.9mm;display:flex;flex-direction:column;overflow:hidden;line-height:1.08}
-.lbl.cutline{outline:0.15mm solid #b5b5b5;outline-offset:-0.075mm}
+.lbl.cutline{border:0.15mm solid #b5b5b5}
 .lbl.pick{cursor:pointer}
 .l-lab{font-size:var(--sz-lab);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:clip;border-bottom:0.2mm solid #000;padding-bottom:0.3mm;margin-bottom:0.4mm;text-align:center;letter-spacing:.02em}
 .l-name{font-size:var(--sz-name);font-weight:var(--w-name);flex:1 1 auto;min-height:0;overflow:hidden;overflow-wrap:anywhere;text-align:center;display:flex;align-items:center;justify-content:center}
@@ -182,6 +182,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
     </div>
   </div>
   <div class="row no-print">
+    <button class="btn" id="pdfBtn" type="button">تنزيل PDF</button>
     <button class="btn primary" id="printBtn" type="button">طباعة الملصقات</button>
   </div>
 </header>
@@ -698,6 +699,41 @@ function sizesFor(w,h){const k=Math.min(w,h*1.1)/22,r=v=>Math.round(v*k*2)/2;ret
 $('#fitSizes').onclick=()=>{Object.assign(S,sizesFor(+S.lw,+S.lh));loadSettingsUI();save();render()};
 $('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;if(e.target.value==='sheet91'){Object.assign(S,{lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0},sizesFor(24,19));loadSettingsUI();save();render();return}const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;Object.assign(S,sizesFor(w,h));loadSettingsUI();save();render()});
 $('#resetSet').onclick=()=>{S=Object.assign({},DEF);loadSettingsUI();fillPreSelects();save();render();renderQueue()};
+
+/* ---------- PDF download (exact A4, labels at their real mm positions) ---------- */
+function loadScript(src){return new Promise((ok,no)=>{const sc=document.createElement('script');sc.src=src;sc.onload=ok;sc.onerror=()=>no(new Error(src));document.head.appendChild(sc)})}
+async function downloadPDF(){
+  const btn=$('#pdfBtn'), old=btn.textContent, err=$('#formErr');
+  calib=false; render();
+  if(!queue.flatMap(slidesFor).length){err.textContent='أضف عينة واحدة على الأقل قبل تنزيل PDF.';return}
+  btn.disabled=true; btn.textContent='جارٍ التجهيز…';
+  try{
+    if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+    const dpi=(Math.min(screen.width,screen.height)<700)?300:400, scale=dpi/96;
+    const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+    const box=document.createElement('div'); box.style.cssText='position:fixed;left:-10000px;top:0;width:210mm;background:#fff;direction:ltr';
+    document.body.appendChild(box);
+    const pages=[...document.querySelectorAll('#sheets .page')];
+    for(let i=0;i<pages.length;i++){
+      btn.textContent='جارٍ التجهيز '+(i+1)+'/'+pages.length;
+      const pg=pages[i].cloneNode(true); pg.style.transform='none';
+      pg.querySelectorAll('.cell').forEach(c=>c.remove());
+      box.innerHTML=''; box.appendChild(pg);
+      const cv=await window.html2canvas(pg,{scale,backgroundColor:'#ffffff',logging:false,width:pg.offsetWidth,height:pg.offsetHeight});
+      if(i>0)pdf.addPage('a4','portrait');
+      pdf.addImage(cv.toDataURL('image/png'),'PNG',0,0,210,297,undefined,'FAST');
+    }
+    box.remove();
+    const d=new Date(), stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    pdf.save('slide-labels-'+stamp+'.pdf');
+    err.textContent='';
+  }catch(e){
+    err.textContent='تعذّر إنشاء PDF. تأكد من الاتصال بالإنترنت أول مرة، أو استخدم الطباعة ثم اختر «حفظ بتنسيق PDF».';
+  }finally{btn.disabled=false; btn.textContent=old}
+}
+$('#pdfBtn').onclick=downloadPDF;
 
 /* ---------- print ---------- */
 let printedCount=0;
