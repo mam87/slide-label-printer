@@ -124,6 +124,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .l-lab{font-size:var(--sz-lab);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:clip;border-bottom:0.2mm solid #000;padding-bottom:0.3mm;margin-bottom:0.4mm;text-align:center;letter-spacing:.02em}
 .l-name{font-size:var(--sz-name);font-weight:var(--w-name);flex:1 1 auto;min-height:0;overflow:hidden;overflow-wrap:anywhere;text-align:center;display:flex;align-items:center;justify-content:center}
 .l-case{font-family:var(--lf-num,Arial),Arial,sans-serif;font-size:var(--sz-case);font-weight:var(--w-case);white-space:nowrap;overflow:hidden;text-align:center;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.l-lab,.l-case,.l-blk,.l-ft{flex-shrink:0}
 .l-case.big{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;font-size:var(--sz-big)}
 .l-blk{display:flex;justify-content:center;gap:1.4mm;font-family:var(--lf-num,Arial),Arial,sans-serif;font-size:var(--sz-blk);font-weight:900;white-space:nowrap}
 .l-blk .lv{border:0.25mm solid #000;border-radius:0.6mm;padding:0 0.6mm}
@@ -289,7 +290,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       <div class="setgrid">
         <label class="f" style="grid-column:1/-1">قياس الملصق
           <select id="preset">
-            <option value="sheet88">ورق المطبعة: 22 × 22 مم، 88 ملصقاً (8 × 11)</option>
+            <option value="sheet91">ورق المطبعة: 24 × 19 مم، 91 ملصقاً (7 × 13)</option>
             <option value="22x22">22 × 22 مم (قياسي لمنطقة الكتابة)</option>
             <option value="25x20">25 × 20 مم</option>
             <option value="24x19">24 × 19 مم</option>
@@ -362,7 +363,7 @@ const store={
   get(k,d){try{const v=localStorage.getItem('slp_'+k);return v?JSON.parse(v):d}catch(e){return d}},
   set(k,v){try{localStorage.setItem('slp_'+k,JSON.stringify(v))}catch(e){}}
 };
-const DEF={lw:22,lh:22,ml:6.5,mt:12.5,gx:3,gy:3,cols:0,rows:0,offX:0,offY:0,
+const DEF={lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,offX:0,offY:0,
   fNum:'Arial',fText:'Arial',szLab:4.5,szCase:10.5,szBig:13.5,szName:6.5,szBlk:8.5,szFt:5,boldCase:true,boldName:true,autofit:true,
   lab:'JUH · Histopathology',prefixes:'S=Skin\nM=Bone marrow\nOR=Oral biopsy\nC=Cytology\nF=FNA',showLab:true,showDate:true,lvlSingle:false,upper:true,cut:true};
 let S=Object.assign({},DEF,store.get('settings',{}));
@@ -686,7 +687,7 @@ $('#rangeAdd').onclick=()=>{
 const NUMS=['lw','lh','ml','mt','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szFt'], BOOLS=['showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','autofit'], SELS=['fNum','fText'];
 function loadSettingsUI(){
   NUMS.forEach(k=>$('#set_'+k).value=S[k]); BOOLS.forEach(k=>$('#set_'+k).checked=!!S[k]); SELS.forEach(k=>$('#set_'+k).value=S[k]); $('#set_lab').value=S.lab; $('#set_prefixes').value=S.prefixes; applyFonts();
-  const key=(+S.lw===22&&+S.lh===22&&+S.ml===6.5&&+S.mt===12.5&&+S.gx===3&&+S.gy===3)?'sheet88':S.lw+'x'+S.lh; $('#preset').value=[...$('#preset').options].some(o=>o.value===key)?key:'custom';
+  const key=(+S.lw===24&&+S.lh===19&&+S.ml===15&&+S.mt===13&&+S.gx===2&&+S.gy===2)?'sheet91':S.lw+'x'+S.lh; $('#preset').value=[...$('#preset').options].some(o=>o.value===key)?key:'custom';
 }
 NUMS.forEach(k=>$('#set_'+k).addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){S[k]=v;if(k==='lw'||k==='lh')loadSettingsUI();save();render();renderQueue()}}));
 BOOLS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.checked;save();render();renderQueue()}));
@@ -695,7 +696,7 @@ $('#set_prefixes').addEventListener('change',e=>{S.prefixes=e.target.value;save(
 SELS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.value;applyFonts();save();render();if(document.fonts)document.fonts.load('10pt "'+S[k]+'"').then(fitText,()=>{})}));
 function sizesFor(w,h){const k=Math.min(w,h*1.1)/22,r=v=>Math.round(v*k*2)/2;return {szLab:r(4.5),szCase:r(10.5),szBig:r(13.5),szName:r(6.5),szBlk:r(8.5),szFt:r(5)}}
 $('#fitSizes').onclick=()=>{Object.assign(S,sizesFor(+S.lw,+S.lh));loadSettingsUI();save();render()};
-$('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;if(e.target.value==='sheet88'){Object.assign(S,{lw:22,lh:22,ml:6.5,mt:12.5,gx:3,gy:3,cols:0,rows:0},sizesFor(22,22));loadSettingsUI();save();render();return}const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;Object.assign(S,sizesFor(w,h));loadSettingsUI();save();render()});
+$('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;if(e.target.value==='sheet91'){Object.assign(S,{lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0},sizesFor(24,19));loadSettingsUI();save();render();return}const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;Object.assign(S,sizesFor(w,h));loadSettingsUI();save();render()});
 $('#resetSet').onclick=()=>{S=Object.assign({},DEF);loadSettingsUI();fillPreSelects();save();render();renderQueue()};
 
 /* ---------- print ---------- */
