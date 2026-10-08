@@ -101,6 +101,9 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .stat b{font-size:18px;font-family:var(--f-mono)}
 .skipbox{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
 .skipbox input{width:64px;text-align:center;padding:5px}
+.datebox select{width:auto;padding:5px 8px}
+.datebox #dateFixed{width:auto}
+.datebox #dateCustom{width:130px}
 .banner{background:var(--eosin-soft);border:1px solid var(--eosin);border-radius:10px;padding:12px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 
 #sheets{display:flex;flex-direction:column;gap:18px;align-items:center;min-width:0}
@@ -339,6 +342,19 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
         <div><span>صفحات</span><b id="stPages">0</b></div>
         <div><span>ملصقات/ورقة</span><b id="stPer">0</b></div>
       </div>
+      <div class="skipbox datebox">
+        <label for="dateMode">تاريخ الملصق</label>
+        <select id="dateMode">
+          <option value="today">اليوم</option>
+          <option value="offset">اليوم + أيام</option>
+          <option value="fixed">تاريخ محدد</option>
+          <option value="custom">نص مخصص</option>
+        </select>
+        <input type="number" id="dateOffset" class="mono" min="-30" max="90" step="1" title="عدد الأيام بعد اليوم (أو قبله بالسالب)" hidden>
+        <input type="date" id="dateFixed" class="mono" hidden>
+        <input type="text" id="dateCustom" maxlength="16" dir="auto" placeholder="مثال: 20/10/2026" hidden>
+        <b id="datePreview" class="mono" style="color:var(--ink)"></b>
+      </div>
       <div class="skipbox">
         <label for="skipIn">ابدأ من الملصق رقم</label>
         <input type="number" min="1" id="skipIn" class="mono">
@@ -446,7 +462,15 @@ function geo(){
 }
 function pos(i,g){const r=Math.floor(i/g.cols),c=i%g.cols;
   return {x:+S.ml+c*(+S.lw+ +S.gx)+ +S.offX, y:+S.mt+r*(+S.lh+ +S.gy)+ +S.offY}}
-function today(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}
+function fmtDate(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}
+function isoLocal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function labelDate(){
+  const m=S.dateMode||'today', now=new Date();
+  if(m==='offset'){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+(parseInt(S.dateOffset)||0));return fmtDate(d)}
+  if(m==='fixed'&&/^\d{4}-\d{2}-\d{2}$/.test(S.dateFixed||'')){const [y,mo,da]=S.dateFixed.split('-').map(Number);return fmtDate(new Date(y,mo-1,da))}
+  if(m==='custom')return String(S.dateCustom||'').trim();
+  return fmtDate(now);
+}
 
 function labelHTML(sl,st,i,pick){
   const c=sl.c; let name=c.name||'';
@@ -456,11 +480,12 @@ function labelHTML(sl,st,i,pick){
     `<div class="l-case fit${name?'':' big'}">${esc(caseNo(c))}</div>`+
     (name?`<div class="l-name fit" dir="auto">${esc(name)}</div>`:'')+
     `<div class="l-blk">${sl.block?`<span>${esc(sl.block)}</span>`:''}${sl.level?`<span class="lv">${sl.level}</span>`:''}</div>`+
-    `<div class="l-ft"><span>${esc(sl.stain)}</span>${S.showDate?`<span>${today()}</span>`:''}</div></div>`;
+    `<div class="l-ft"><span>${esc(sl.stain)}</span>${S.showDate&&labelDate()?`<span>${esc(labelDate())}</span>`:''}</div></div>`;
 }
 
 /* ---------- render sheets ---------- */
 function render(){
+  applyFonts();
   const g=geo();
   const all=calib?[]:queue.flatMap(slidesFor);
   if(skip>=g.per)skip=g.per-1;
@@ -748,6 +773,24 @@ function loadSettingsUI(){
 }
 NUMS.forEach(k=>$('#set_'+k).addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){S[k]=v;if(k==='lw'||k==='lh')loadSettingsUI();save();render();renderQueue()}}));
 BOOLS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.checked;save();render();renderQueue()}));
+/* label date: today by default; any other choice lasts for the day it was made */
+if(S.dateMode&&S.dateMode!=='today'&&S.dateSetOn!==isoLocal(new Date())){S.dateMode='today';store.set('settings',S)}
+function dateUI(){
+  const m=S.dateMode||'today'; $('#dateMode').value=m;
+  $('#dateOffset').hidden=m!=='offset'; $('#dateFixed').hidden=m!=='fixed'; $('#dateCustom').hidden=m!=='custom';
+  $('#dateOffset').value=S.dateOffset??1; $('#dateFixed').value=S.dateFixed||isoLocal(new Date()); $('#dateCustom').value=S.dateCustom||'';
+  $('#datePreview').textContent=S.showDate?(labelDate()||'—'):'(مخفي)';
+}
+function dateChanged(){S.dateSetOn=isoLocal(new Date());save();dateUI();render()}
+$('#dateMode').addEventListener('change',e=>{S.dateMode=e.target.value;
+  if(S.dateMode==='offset'&&S.dateOffset==null)S.dateOffset=1;
+  if(S.dateMode==='fixed'&&!S.dateFixed)S.dateFixed=isoLocal(new Date());
+  if(S.dateMode==='custom'&&!S.dateCustom)S.dateCustom=fmtDate(new Date());
+  dateChanged(); if(S.dateMode==='custom')$('#dateCustom').focus()});
+$('#dateOffset').addEventListener('input',e=>{S.dateOffset=parseInt(e.target.value)||0;dateChanged()});
+$('#dateFixed').addEventListener('input',e=>{S.dateFixed=e.target.value;dateChanged()});
+$('#dateCustom').addEventListener('input',e=>{S.dateCustom=e.target.value;S.dateSetOn=isoLocal(new Date());save();$('#datePreview').textContent=labelDate()||'—';render()});
+$('#set_showDate').addEventListener('change',dateUI);
 $('#set_lab').addEventListener('input',e=>{S.lab=e.target.value;save();render()});
 $('#set_prefixes').addEventListener('change',e=>{S.prefixes=e.target.value;save();fillPreSelects()});
 SELS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.value;applyFonts();save();render();if(document.fonts)document.fonts.load('10pt "'+S[k]+'"').then(fitText,()=>{})}));
@@ -811,7 +854,7 @@ $('#bannerYes').onclick=()=>{skip=+$('#banner').dataset.next||0;queue=[];save();
 $('#bannerNo').onclick=()=>{$('#banner').hidden=true};
 
 /* ---------- init ---------- */
-loadSettingsUI(); fillPreSelects(); setPre('f',lastPre); resetForm(); render();
+loadSettingsUI(); dateUI(); fillPreSelects(); setPre('f',lastPre); resetForm(); render();
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{fitText()});
 })();
 </script>
