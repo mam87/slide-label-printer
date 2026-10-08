@@ -142,6 +142,12 @@ textarea{min-height:90px;font-family:var(--f-mono);font-size:12.5px;direction:lt
 .sheet-note{font-size:12px;color:var(--muted);text-align:center}
 
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg)}
+.sample{margin:0;display:flex;align-items:center;gap:10px}
+#sampleBox{position:relative;direction:ltr;flex:none;border:1px solid var(--line);border-radius:3px;background:var(--paper);overflow:hidden}
+#sampleBox .sample-in{position:absolute;left:0;top:0;transform-origin:top left}
+#sampleBox .lbl{border:0}
+.sample figcaption{font-size:11.5px;color:var(--muted);max-width:7em;line-height:1.4}
+@media (max-width:600px){.sample figcaption{display:none} header.top{flex-wrap:nowrap} header.top .brand{display:none} header.top>.row{flex-direction:column;align-items:stretch;flex:1}}
 @media (max-width:900px){
   .grid>.col:last-child{order:2}
 }
@@ -186,6 +192,10 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       <p class="sub">ملصقات شرائح الأنسجة على ورق ستيكرز A4 وطابعة ليزر</p>
     </div>
   </div>
+  <figure class="sample no-print" aria-label="معاينة حية لملصق">
+    <div id="sampleBox"></div>
+    <figcaption id="sampleCap">معاينة حية</figcaption>
+  </figure>
   <div class="row no-print">
     <button class="btn" id="pdfBtn" type="button">تنزيل PDF</button>
     <button class="btn primary" id="printBtn" type="button">طباعة الملصقات</button>
@@ -295,6 +305,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
         <label><input type="checkbox" id="set_boldDt"> التاريخ عريض</label>
         <label><input type="checkbox" id="set_boldLab"> اسم المختبر عريض</label>
         <label><input type="checkbox" id="set_autofit"> تصغير تلقائي إذا لم يتسع النص</label>
+        <label><input type="checkbox" id="set_maxFit"> تكبير الاسم ورقم العينة لأقصى حجم تسمح به المساحة</label>
       </div>
       <div class="row" style="margin-top:12px">
         <button class="btn small ghost" type="button" id="fitSizes">أحجام مناسبة لقياس الملصق</button>
@@ -395,7 +406,7 @@ const store={
 };
 function sizesFor(w,h){const k=Math.min(w/24,h/19),r=v=>Math.round(v*k*2)/2;return {szLab:r(4.5),szCase:r(11),szBig:r(14),szName:r(7),szBlk:r(9),szLv:r(9),szSt:r(5.5),szDt:r(5.5),szFt:r(5.5)}}
 const DEF={lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,offX:0,offY:0,
-  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,szLv:9,szSt:5.5,szDt:5.5,autofit:true,v:3,
+  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,szLv:9,szSt:5.5,szDt:5.5,autofit:true,maxFit:false,v:3,
   lab:'JUH · Histopathology',prefixes:'S=Skin\nM=Bone marrow\nOR=Oral biopsy\nC=Cytology\nF=FNA',showLab:false,showDate:true,lvlSingle:false,upper:true,cut:false};
 let S=Object.assign({},DEF,store.get('settings',{}));
 if(!(S.v>=2)){ /* one-time move to the readable typography; layout and calibration are kept */
@@ -495,8 +506,16 @@ function labelHTML(sl,st,i,pick){
 }
 
 /* ---------- render sheets ---------- */
+function renderSample(){
+  const box=$('#sampleBox'); if(!box)return;
+  const k=window.innerWidth<600?1.7:2.4, mm=96/25.4;
+  const sl={c:{name:'تجربة',pre:'',num:'9999',year:YY},block:'A1',level:'L2',stain:'H&E'};
+  box.style.width=(S.lw*mm*k)+'px'; box.style.height=(S.lh*mm*k)+'px';
+  box.innerHTML=`<div class="sample-in" style="width:${S.lw}mm;height:${S.lh}mm;transform:scale(${k})">${labelHTML(sl,`left:0;top:0;width:${S.lw}mm;height:${S.lh}mm`,-1,false)}</div>`;
+  $('#sampleCap').textContent='معاينة حية (مكبّرة)';
+}
 function render(){
-  applyFonts();
+  applyFonts(); renderSample();
   const g=geo();
   const all=calib?[]:queue.flatMap(slidesFor);
   if(skip>=g.per)skip=g.per-1;
@@ -528,13 +547,40 @@ function applyFonts(){
   [['lab','szLab'],['case','szCase'],['big','szBig'],['name','szName'],['blk','szBlk'],['lv','szLv'],['st','szSt'],['dt','szDt']].forEach(([v,k])=>r.setProperty('--sz-'+v,(+S[k]||5)+'pt'));
   r.setProperty('--w-case',S.boldCase?900:400); r.setProperty('--w-name',S.boldName?700:400); r.setProperty('--w-blk',S.boldBlk?900:400); r.setProperty('--w-lab',S.boldLab?700:400); r.setProperty('--w-st',S.boldSt?700:400); r.setProperty('--w-dt',S.boldDt?700:400);
 }
+function lblOver(l){
+  const c=l.querySelector('.l-case'), n=l.querySelector('.l-name'), o=e=>e&&(e.scrollHeight>e.clientHeight+0.5||e.scrollWidth>e.clientWidth+0.5);
+  return o(c)||o(n)||l.scrollHeight>l.clientHeight+0.5;
+}
+function growLabel(l){ /* biggest case number + name the label can hold, never below the chosen sizes */
+  const c=l.querySelector('.l-case'), n=l.querySelector('.l-name');
+  const px=e=>e?parseFloat(getComputedStyle(e).fontSize):0, set=(e,v)=>{if(e)e.style.fontSize=v+'px'};
+  const c0=px(c), n0=px(n);
+  if(lblOver(l))return false;
+  const search=(apply,hi)=>{let lo=1;for(let i=0;i<9;i++){const m=(lo+hi)/2;apply(m);if(lblOver(l))hi=m;else lo=m}apply(lo);return lo};
+  const k=search(m=>{set(c,c0*m);set(n,n0*m)},3.2);
+  const c1=px(c), n1=px(n);
+  if(c)search(m=>set(c,c1*m),2.2);
+  if(n)search(m=>set(n,n1*m),2.2);
+  return true;
+}
+const fitCache=new Map();
 function fitText(){
+  fitCache.clear();
   document.querySelectorAll('.lbl .fit').forEach(el=>{
     el.style.fontSize='';
     if(!S.autofit)return;
     let fs=parseFloat(getComputedStyle(el).fontSize),n=0;
     const min=el.classList.contains('l-case')?10.7:7.3; /* px: case ≥ 8 pt, name ≥ 5.5 pt */
     while((el.scrollHeight>el.clientHeight+0.5||el.scrollWidth>el.clientWidth+0.5)&&fs>min&&n<60){fs=Math.max(min,fs-0.3);el.style.fontSize=fs+'px';n++}
+  });
+  if(S.maxFit)document.querySelectorAll('.lbl').forEach(l=>{
+    const c=l.querySelector('.l-case'), n=l.querySelector('.l-name'), sig=l.style.width+l.style.height+l.innerHTML;
+    const hit=fitCache.get(sig);
+    if(hit){if(c)c.style.fontSize=hit[0];if(n)n.style.fontSize=hit[1];return}
+    const keepC=c&&c.style.fontSize, keepN=n&&n.style.fontSize;
+    if(c)c.style.fontSize=''; if(n)n.style.fontSize='';
+    if(!growLabel(l)){if(c)c.style.fontSize=keepC||'';if(n)n.style.fontSize=keepN||''}
+    fitCache.set(sig,[c?c.style.fontSize:'',n?n.style.fontSize:'']);
   });
   document.querySelectorAll('.lbl .l-ft').forEach(ft=>{
     const parts=[...ft.children]; parts.forEach(x=>x.style.fontSize='');
@@ -555,7 +601,7 @@ function scaleSheets(){
     hd.firstElementChild.style.transform=`scale(${s})`;
   });
 }
-window.addEventListener('resize',scaleSheets);
+window.addEventListener('resize',()=>{scaleSheets();renderSample();fitText()});
 
 $('#sheets').addEventListener('click',e=>{
   const t=e.target.closest('[data-i]'); if(!t||calib)return;
@@ -788,7 +834,7 @@ $('#rangeAdd').onclick=()=>{
 };
 
 /* ---------- settings ---------- */
-const NUMS=['lw','lh','ml','mt','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szLv','szSt','szDt'], BOOLS=['showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','boldBlk','boldSt','boldDt','boldLab','autofit'], SELS=['fNum','fText'];
+const NUMS=['lw','lh','ml','mt','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szLv','szSt','szDt'], BOOLS=['showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','boldBlk','boldSt','boldDt','boldLab','autofit','maxFit'], SELS=['fNum','fText'];
 function loadSettingsUI(){
   NUMS.forEach(k=>$('#set_'+k).value=S[k]); BOOLS.forEach(k=>$('#set_'+k).checked=!!S[k]); SELS.forEach(k=>$('#set_'+k).value=S[k]); $('#set_lab').value=S.lab; $('#set_prefixes').value=S.prefixes; applyFonts();
   const key=(+S.lw===24&&+S.lh===19&&+S.ml===15&&+S.mt===13&&+S.gx===2&&+S.gy===2)?'sheet91':S.lw+'x'+S.lh; $('#preset').value=[...$('#preset').options].some(o=>o.value===key)?key:'custom';
