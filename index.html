@@ -104,7 +104,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .banner{background:var(--eosin-soft);border:1px solid var(--eosin);border-radius:10px;padding:12px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 
 #sheets{display:flex;flex-direction:column;gap:18px;align-items:center;min-width:0}
-.holder{direction:ltr;position:relative;overflow:hidden;box-shadow:0 1px 0 var(--line),0 8px 24px rgba(30,20,60,.12);border-radius:2px}
+.holder{direction:ltr;position:relative;overflow:hidden;border:1px solid var(--line);border-radius:2px}
 .pgcap{font-size:12px;color:var(--muted);align-self:stretch;text-align:center}
 
 /* The A4 sheet itself: paper is paper in both themes */
@@ -122,7 +122,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .lbl.cutline{border:0.15mm solid #b5b5b5}
 .lbl.pick{cursor:pointer}
 .l-lab{font-size:var(--sz-lab);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:clip;border-bottom:0.2mm solid #000;padding-bottom:0.3mm;margin-bottom:0.4mm;text-align:center;letter-spacing:.02em}
-.l-name{font-size:var(--sz-name);font-weight:var(--w-name);flex:1 1 auto;min-height:0;overflow:hidden;overflow-wrap:anywhere;text-align:center;display:flex;align-items:center;justify-content:center}
+.l-name{font-size:var(--sz-name);font-weight:var(--w-name);flex:1 1 auto;min-height:0;overflow:hidden;overflow-wrap:break-word;text-align:center;display:flex;align-items:center;justify-content:center}
 .l-case{font-family:var(--lf-num,Arial),Arial,sans-serif;font-size:var(--sz-case);font-weight:var(--w-case);white-space:nowrap;overflow:hidden;text-align:center;letter-spacing:.01em;font-variant-numeric:tabular-nums}
 .l-lab,.l-case,.l-blk,.l-ft{flex-shrink:0}
 .l-case.big{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;font-size:var(--sz-big)}
@@ -229,6 +229,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       <h2>قائمة الطباعة <small id="qSummary"></small></h2>
       <div class="queue" id="queue"></div>
       <div class="row" style="margin-top:10px">
+        <button class="btn small" type="button" id="xlsExport">تصدير القائمة إلى Excel</button>
         <button class="btn small danger" type="button" id="clearQ">تفريغ القائمة</button>
       </div>
     </section>
@@ -239,7 +240,11 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       الاسم ; الرقم ; الكاسيتات ; المستويات ; الصبغة ; النسخ</p>
       <textarea id="bulk" placeholder="SARA KHALED ODEH; 2369-26; A1-A4, B1; 1; H&E&#10;OMAR NABIL; 2370; A1-A2; 3; H&E"></textarea>
       <p class="err" id="bulkErr"></p>
-      <button class="btn small" type="button" id="bulkAdd">أضف الأسطر</button>
+      <div class="row">
+        <button class="btn small" type="button" id="bulkAdd">أضف الأسطر</button>
+        <button class="btn small" type="button" id="xlsTemplate">تحميل نموذج Excel</button>
+        <label class="btn small" for="xlsFile" style="display:inline-flex;align-items:center">رفع ملف Excel<input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" hidden></label>
+      </div>
     </details>
 
     <details class="panel" id="rangePanel" open>
@@ -352,7 +357,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 </main>
 
 <datalist id="stains">
-  <option value="H&E"><option value="PAS"><option value="PAS-D"><option value="ZN"><option value="GMS"><option value="Giemsa">
+  <option value="H&E"><option value="Cell block"><option value="PAS"><option value="PAS-D"><option value="ZN"><option value="GMS"><option value="Giemsa">
   <option value="Masson"><option value="Reticulin"><option value="Congo Red"><option value="Alcian Blue"><option value="Perls">
   <option value="Mucicarmine"><option value="Elastic"><option value="IHC"><option value="Unstained"><option value="Pap"><option value="Diff-Quik">
 </datalist>
@@ -364,10 +369,15 @@ const store={
   get(k,d){try{const v=localStorage.getItem('slp_'+k);return v?JSON.parse(v):d}catch(e){return d}},
   set(k,v){try{localStorage.setItem('slp_'+k,JSON.stringify(v))}catch(e){}}
 };
+function sizesFor(w,h){const k=Math.min(w/24,h/19),r=v=>Math.round(v*k*2)/2;return {szLab:r(4.5),szCase:r(11),szBig:r(14),szName:r(7),szBlk:r(9),szFt:r(5.5)}}
 const DEF={lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,offX:0,offY:0,
-  fNum:'Arial',fText:'Arial',szLab:4.5,szCase:10.5,szBig:13.5,szName:6.5,szBlk:8.5,szFt:5,boldCase:true,boldName:true,autofit:true,
-  lab:'JUH · Histopathology',prefixes:'S=Skin\nM=Bone marrow\nOR=Oral biopsy\nC=Cytology\nF=FNA',showLab:true,showDate:true,lvlSingle:false,upper:true,cut:true};
+  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,autofit:true,v:2,
+  lab:'JUH · Histopathology',prefixes:'S=Skin\nM=Bone marrow\nOR=Oral biopsy\nC=Cytology\nF=FNA',showLab:false,showDate:true,lvlSingle:false,upper:true,cut:false};
 let S=Object.assign({},DEF,store.get('settings',{}));
+if(!(S.v>=2)){ /* one-time move to the readable typography; layout and calibration are kept */
+  Object.assign(S,{fNum:DEF.fNum,fText:DEF.fText,boldCase:true,boldName:true,autofit:true,showLab:false,cut:false,v:2},sizesFor(+S.lw||24,+S.lh||19));
+  store.set('settings',S);
+}
 const YY=String(new Date().getFullYear()).slice(-2);
 let queue=store.get('queue',null);
 if(!Array.isArray(queue)){
@@ -436,7 +446,7 @@ function geo(){
 }
 function pos(i,g){const r=Math.floor(i/g.cols),c=i%g.cols;
   return {x:+S.ml+c*(+S.lw+ +S.gx)+ +S.offX, y:+S.mt+r*(+S.lh+ +S.gy)+ +S.offY}}
-function today(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+YY}
+function today(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}
 
 function labelHTML(sl,st,i,pick){
   const c=sl.c; let name=c.name||'';
@@ -487,7 +497,8 @@ function fitText(){
     el.style.fontSize='';
     if(!S.autofit)return;
     let fs=parseFloat(getComputedStyle(el).fontSize),n=0;
-    while((el.scrollHeight>el.clientHeight+0.5||el.scrollWidth>el.clientWidth+0.5)&&fs>5&&n<50){fs-=0.35;el.style.fontSize=fs+'px';n++}
+    const min=el.classList.contains('l-case')?10.7:7.3; /* px: case ≥ 8 pt, name ≥ 5.5 pt */
+    while((el.scrollHeight>el.clientHeight+0.5||el.scrollWidth>el.clientWidth+0.5)&&fs>min&&n<60){fs=Math.max(min,fs-0.3);el.style.fontSize=fs+'px';n++}
   });
 }
 function scaleSheets(){
@@ -635,6 +646,51 @@ $('#bulkAdd').onclick=()=>{
   save(); renderQueue(); render();
 };
 
+/* ---------- Excel: template, import, export ---------- */
+const XCOLS=['الاسم','رقم العينة','البادئة','الكاسيتات','المستويات','الصبغة','النسخ'];
+async function needXLSX(){if(!window.XLSX)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');return window.XLSX}
+function xlsSave(X,rows,fname,widths){
+  const ws=X.utils.aoa_to_sheet(rows); ws['!cols']=widths.map(w=>({wch:w}));
+  const wb=X.utils.book_new(); wb.Workbook={Views:[{RTL:true}]}; X.utils.book_append_sheet(wb,ws,'Labels'); X.writeFile(wb,fname);
+}
+function stampDate(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+$('#xlsTemplate').onclick=async()=>{
+  try{const X=await needXLSX();
+    xlsSave(X,[XCOLS,['AHMAD MOHAMMAD SALEH','2368-26','S','A1-A3, B1',1,'H&E',1],['سارة خالد عودة','2369','','A1',3,'PAS',2],['OMAR NABIL','2370-26','C','A',1,'Cell block',1]],'slide-labels-template.xlsx',[28,14,9,18,10,12,8]);
+  }catch(e){$('#bulkErr').textContent='تعذّر تحميل أداة Excel. تأكد من الاتصال بالإنترنت.'}
+};
+$('#xlsExport').onclick=async()=>{
+  if(!queue.length){$('#formErr').textContent='القائمة فارغة.';return}
+  try{const X=await needXLSX(); const rows=[XCOLS.concat(['عدد الملصقات'])];
+    queue.forEach(c=>c.orders.forEach((o,i)=>rows.push([c.name,c.num+'-'+c.year,c.pre||'',o.blocks,o.levels||1,o.stain||'H&E',o.copies||1,i===0?slidesFor(c).length:''])));
+    xlsSave(X,rows,'slide-labels-'+stampDate()+'.xlsx',[28,14,9,18,10,12,8,12]);
+  }catch(e){$('#formErr').textContent='تعذّر تحميل أداة Excel. تأكد من الاتصال بالإنترنت.'}
+};
+$('#xlsFile').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f)return; const out=$('#bulkErr');
+  try{
+    const X=await needXLSX(); const wb=X.read(await f.arrayBuffer(),{type:'array'});
+    const rows=X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:false}).filter(r=>r.some(v=>String(v).trim()));
+    if(!rows.length){out.textContent='الملف فارغ.';return}
+    const norm=v=>String(v).trim().toLowerCase();
+    const alias={name:['الاسم','اسم المريض','name','patient','patient name'],num:['رقم العينة','الرقم','number','case','case no','accession'],pre:['البادئة','نوع العينة','prefix','type'],blk:['الكاسيتات','الكاسيت','cassettes','blocks','block'],lv:['المستويات','levels','level'],st:['الصبغة','stain'],cp:['النسخ','copies','copy']};
+    const head=rows[0].map(norm); let idx={name:0,num:1,pre:-1,blk:2,lv:3,st:4,cp:5}, start=0;
+    const found=Object.fromEntries(Object.entries(alias).map(([k,a])=>[k,head.findIndex(h=>a.includes(h))]));
+    if(found.num>=0){idx=found; start=1}
+    const g=(r,k)=>idx[k]>=0&&idx[k]<r.length?String(r[idx[k]]).trim():'';
+    queue=queue.filter(c=>!c.example); let added=0; const errs=[];
+    rows.slice(start).forEach((r,i)=>{
+      let num=g(r,'num').replace(/\s/g,''); const m=num.match(/^([A-Za-z]{0,4})(\d{1,7})(?:[-\/](\d{2}))?$/);
+      if(!m){errs.push('صف '+(i+start+1)+': رقم العينة');return}
+      const blocks=g(r,'blk'); if(parseBlocks(blocks).bad.length){errs.push('صف '+(i+start+1)+': الكاسيتات');return}
+      queue.push({id:uid(),name:g(r,'name'),pre:(g(r,'pre')||m[1]).toUpperCase().slice(0,4),num:m[2],year:m[3]||YY,
+        orders:[{blocks,levels:parseInt(g(r,'lv'))||1,stain:g(r,'st')||'H&E',copies:parseInt(g(r,'cp'))||1}]}); added++;
+    });
+    out.textContent=(added?'أُضيفت '+added+' عينة من الملف. ':'')+errs.slice(0,6).join(' · ')+(errs.length>6?' …':'');
+    save(); renderQueue(); render();
+  }catch(err){out.textContent='تعذّر قراءة الملف. تأكد أنه ملف Excel وأن الاتصال بالإنترنت متاح.'}
+});
+
 /* ---------- number range ---------- */
 $('#r_year').value=YY;
 function readRange(){
@@ -695,7 +751,7 @@ BOOLS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.checke
 $('#set_lab').addEventListener('input',e=>{S.lab=e.target.value;save();render()});
 $('#set_prefixes').addEventListener('change',e=>{S.prefixes=e.target.value;save();fillPreSelects()});
 SELS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.value;applyFonts();save();render();if(document.fonts)document.fonts.load('10pt "'+S[k]+'"').then(fitText,()=>{})}));
-function sizesFor(w,h){const k=Math.min(w,h*1.1)/22,r=v=>Math.round(v*k*2)/2;return {szLab:r(4.5),szCase:r(10.5),szBig:r(13.5),szName:r(6.5),szBlk:r(8.5),szFt:r(5)}}
+
 $('#fitSizes').onclick=()=>{Object.assign(S,sizesFor(+S.lw,+S.lh));loadSettingsUI();save();render()};
 $('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;if(e.target.value==='sheet91'){Object.assign(S,{lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0},sizesFor(24,19));loadSettingsUI();save();render();return}const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;Object.assign(S,sizesFor(w,h));loadSettingsUI();save();render()});
 $('#resetSet').onclick=()=>{S=Object.assign({},DEF);loadSettingsUI();fillPreSelects();save();render();renderQueue()};
