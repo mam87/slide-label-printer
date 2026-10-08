@@ -124,14 +124,16 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .lbl{position:absolute;color:var(--paper-ink);background:var(--paper);font-family:var(--lf-text,Arial),Arial,Tahoma,sans-serif;padding:0.7mm 0.9mm;display:flex;flex-direction:column;overflow:hidden;line-height:1.08}
 .lbl.cutline{border:0.15mm solid #b5b5b5}
 .lbl.pick{cursor:pointer}
-.l-lab{font-size:var(--sz-lab);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:clip;border-bottom:0.2mm solid #000;padding-bottom:0.3mm;margin-bottom:0.4mm;text-align:center;letter-spacing:.02em}
+.l-lab{font-size:var(--sz-lab);font-weight:var(--w-lab);white-space:nowrap;overflow:hidden;text-overflow:clip;border-bottom:0.2mm solid #000;padding-bottom:0.3mm;margin-bottom:0.4mm;text-align:center;letter-spacing:.02em}
 .l-name{font-size:var(--sz-name);font-weight:var(--w-name);flex:1 1 auto;min-height:0;overflow:hidden;overflow-wrap:break-word;text-align:center;display:flex;align-items:center;justify-content:center}
 .l-case{font-family:var(--lf-num,Arial),Arial,sans-serif;font-size:var(--sz-case);font-weight:var(--w-case);white-space:nowrap;overflow:hidden;text-align:center;letter-spacing:.01em;font-variant-numeric:tabular-nums}
 .l-lab,.l-case,.l-blk,.l-ft{flex-shrink:0}
 .l-case.big{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;font-size:var(--sz-big)}
-.l-blk{display:flex;justify-content:center;gap:1.4mm;font-family:var(--lf-num,Arial),Arial,sans-serif;font-size:var(--sz-blk);font-weight:900;white-space:nowrap}
-.l-blk .lv{border:0.25mm solid #000;border-radius:0.6mm;padding:0 0.6mm}
-.l-ft{display:flex;justify-content:space-between;gap:1mm;font-size:var(--sz-ft);font-weight:700;margin-top:0.4mm;white-space:nowrap;overflow:hidden}
+.l-blk{display:flex;justify-content:center;gap:1.4mm;font-family:var(--lf-num,Arial),Arial,sans-serif;font-size:var(--sz-blk);font-weight:var(--w-blk);white-space:nowrap;align-items:center}
+.l-blk .lv{border:0.25mm solid #000;border-radius:0.6mm;padding:0 0.6mm;font-size:var(--sz-lv);line-height:1.05}
+.l-ft .st{font-size:var(--sz-st);font-weight:var(--w-st);min-width:0;overflow:hidden}
+.l-ft .dt{font-size:var(--sz-dt);font-weight:var(--w-dt);flex-shrink:0;font-family:var(--lf-num,Arial),Arial,sans-serif;font-variant-numeric:tabular-nums}
+.l-ft{display:flex;justify-content:space-between;align-items:baseline;gap:0.8mm;margin-top:0.4mm;white-space:nowrap;overflow:hidden}
 
 .setgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .checks{display:flex;flex-direction:column;gap:7px;margin-top:12px;font-size:13px}
@@ -279,13 +281,19 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
         <label class="f">رقم العينة (pt)<input type="number" step="0.5" min="3" max="30" id="set_szCase"></label>
         <label class="f">رقم العينة بدون اسم (pt)<input type="number" step="0.5" min="3" max="30" id="set_szBig"></label>
         <label class="f">اسم المريض (pt)<input type="number" step="0.5" min="3" max="20" id="set_szName"></label>
-        <label class="f">الكاسيت والمستوى (pt)<input type="number" step="0.5" min="3" max="20" id="set_szBlk"></label>
+        <label class="f">الكاسيت (pt)<input type="number" step="0.5" min="3" max="20" id="set_szBlk"></label>
+        <label class="f">المستوى L1، L2 (pt)<input type="number" step="0.5" min="3" max="20" id="set_szLv"></label>
+        <label class="f">الصبغة (pt)<input type="number" step="0.5" min="3" max="14" id="set_szSt"></label>
+        <label class="f">التاريخ (pt)<input type="number" step="0.5" min="3" max="14" id="set_szDt"></label>
         <label class="f">اسم المختبر (pt)<input type="number" step="0.5" min="3" max="12" id="set_szLab"></label>
-        <label class="f">الصبغة والتاريخ (pt)<input type="number" step="0.5" min="3" max="12" id="set_szFt"></label>
       </div>
       <div class="checks">
         <label><input type="checkbox" id="set_boldCase"> رقم العينة عريض</label>
         <label><input type="checkbox" id="set_boldName"> الاسم عريض</label>
+        <label><input type="checkbox" id="set_boldBlk"> الكاسيت والمستوى عريض</label>
+        <label><input type="checkbox" id="set_boldSt"> الصبغة عريضة</label>
+        <label><input type="checkbox" id="set_boldDt"> التاريخ عريض</label>
+        <label><input type="checkbox" id="set_boldLab"> اسم المختبر عريض</label>
         <label><input type="checkbox" id="set_autofit"> تصغير تلقائي إذا لم يتسع النص</label>
       </div>
       <div class="row" style="margin-top:12px">
@@ -385,14 +393,17 @@ const store={
   get(k,d){try{const v=localStorage.getItem('slp_'+k);return v?JSON.parse(v):d}catch(e){return d}},
   set(k,v){try{localStorage.setItem('slp_'+k,JSON.stringify(v))}catch(e){}}
 };
-function sizesFor(w,h){const k=Math.min(w/24,h/19),r=v=>Math.round(v*k*2)/2;return {szLab:r(4.5),szCase:r(11),szBig:r(14),szName:r(7),szBlk:r(9),szFt:r(5.5)}}
+function sizesFor(w,h){const k=Math.min(w/24,h/19),r=v=>Math.round(v*k*2)/2;return {szLab:r(4.5),szCase:r(11),szBig:r(14),szName:r(7),szBlk:r(9),szLv:r(9),szSt:r(5.5),szDt:r(5.5),szFt:r(5.5)}}
 const DEF={lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,offX:0,offY:0,
-  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,autofit:true,v:2,
+  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,szLv:9,szSt:5.5,szDt:5.5,autofit:true,v:3,
   lab:'JUH · Histopathology',prefixes:'S=Skin\nM=Bone marrow\nOR=Oral biopsy\nC=Cytology\nF=FNA',showLab:false,showDate:true,lvlSingle:false,upper:true,cut:false};
 let S=Object.assign({},DEF,store.get('settings',{}));
 if(!(S.v>=2)){ /* one-time move to the readable typography; layout and calibration are kept */
   Object.assign(S,{fNum:DEF.fNum,fText:DEF.fText,boldCase:true,boldName:true,autofit:true,showLab:false,cut:false,v:2},sizesFor(+S.lw||24,+S.lh||19));
   store.set('settings',S);
+}
+if(!(S.v>=3)){ /* split footer and level sizes out of the shared ones */
+  Object.assign(S,{szLv:+S.szBlk||9,szSt:+S.szFt||5.5,szDt:+S.szFt||5.5,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,v:3}); store.set('settings',S);
 }
 const YY=String(new Date().getFullYear()).slice(-2);
 let queue=store.get('queue',null);
@@ -480,7 +491,7 @@ function labelHTML(sl,st,i,pick){
     `<div class="l-case fit${name?'':' big'}">${esc(caseNo(c))}</div>`+
     (name?`<div class="l-name fit" dir="auto">${esc(name)}</div>`:'')+
     `<div class="l-blk">${sl.block?`<span>${esc(sl.block)}</span>`:''}${sl.level?`<span class="lv">${sl.level}</span>`:''}</div>`+
-    `<div class="l-ft"><span>${esc(sl.stain)}</span>${S.showDate&&labelDate()?`<span>${esc(labelDate())}</span>`:''}</div></div>`;
+    `<div class="l-ft"><span class="st">${esc(sl.stain)}</span>${S.showDate&&labelDate()?`<span class="dt">${esc(labelDate())}</span>`:''}</div></div>`;
 }
 
 /* ---------- render sheets ---------- */
@@ -514,8 +525,8 @@ function render(){
 function applyFonts(){
   const r=document.documentElement.style, q=f=>'"'+String(f).replace(/"/g,'')+'"';
   r.setProperty('--lf-num',q(S.fNum)); r.setProperty('--lf-text',q(S.fText));
-  [['lab','szLab'],['case','szCase'],['big','szBig'],['name','szName'],['blk','szBlk'],['ft','szFt']].forEach(([v,k])=>r.setProperty('--sz-'+v,(+S[k]||5)+'pt'));
-  r.setProperty('--w-case',S.boldCase?900:400); r.setProperty('--w-name',S.boldName?700:400);
+  [['lab','szLab'],['case','szCase'],['big','szBig'],['name','szName'],['blk','szBlk'],['lv','szLv'],['st','szSt'],['dt','szDt']].forEach(([v,k])=>r.setProperty('--sz-'+v,(+S[k]||5)+'pt'));
+  r.setProperty('--w-case',S.boldCase?900:400); r.setProperty('--w-name',S.boldName?700:400); r.setProperty('--w-blk',S.boldBlk?900:400); r.setProperty('--w-lab',S.boldLab?700:400); r.setProperty('--w-st',S.boldSt?700:400); r.setProperty('--w-dt',S.boldDt?700:400);
 }
 function fitText(){
   document.querySelectorAll('.lbl .fit').forEach(el=>{
@@ -524,6 +535,16 @@ function fitText(){
     let fs=parseFloat(getComputedStyle(el).fontSize),n=0;
     const min=el.classList.contains('l-case')?10.7:7.3; /* px: case ≥ 8 pt, name ≥ 5.5 pt */
     while((el.scrollHeight>el.clientHeight+0.5||el.scrollWidth>el.clientWidth+0.5)&&fs>min&&n<60){fs=Math.max(min,fs-0.3);el.style.fontSize=fs+'px';n++}
+  });
+  document.querySelectorAll('.lbl .l-ft').forEach(ft=>{
+    const parts=[...ft.children]; parts.forEach(x=>x.style.fontSize='');
+    const need=()=>parts.reduce((a,x)=>a+x.scrollWidth,0)+(parts.length-1)*parseFloat(getComputedStyle(ft).columnGap||0);
+    let n=0;
+    while(need()>ft.clientWidth+0.5&&n<40){
+      let moved=false;
+      parts.forEach(x=>{const f=parseFloat(getComputedStyle(x).fontSize);if(f>5.4){x.style.fontSize=(f-0.25)+'px';moved=true}});
+      if(!moved)break; n++;
+    }
   });
 }
 function scaleSheets(){
@@ -767,7 +788,7 @@ $('#rangeAdd').onclick=()=>{
 };
 
 /* ---------- settings ---------- */
-const NUMS=['lw','lh','ml','mt','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szFt'], BOOLS=['showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','autofit'], SELS=['fNum','fText'];
+const NUMS=['lw','lh','ml','mt','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szLv','szSt','szDt'], BOOLS=['showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','boldBlk','boldSt','boldDt','boldLab','autofit'], SELS=['fNum','fText'];
 function loadSettingsUI(){
   NUMS.forEach(k=>$('#set_'+k).value=S[k]); BOOLS.forEach(k=>$('#set_'+k).checked=!!S[k]); SELS.forEach(k=>$('#set_'+k).value=S[k]); $('#set_lab').value=S.lab; $('#set_prefixes').value=S.prefixes; applyFonts();
   const key=(+S.lw===24&&+S.lh===19&&+S.ml===15&&+S.mt===13&&+S.gx===2&&+S.gy===2)?'sheet91':S.lw+'x'+S.lh; $('#preset').value=[...$('#preset').options].some(o=>o.value===key)?key:'custom';
