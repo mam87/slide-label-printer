@@ -197,13 +197,13 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       <h2><span id="formTitle">عينة جديدة</span><small id="formCount"></small></h2>
       <div class="fields">
         <label class="f full">اسم المريض
-          <input type="text" id="f_name" dir="auto" placeholder="مثال: AHMAD MOHAMMAD SALEH">
+          <input type="text" id="f_name" dir="auto" placeholder="تجربة">
         </label>
         <div class="full">
           <label class="f" for="f_num">رقم العينة</label>
           <div class="caseno">
             <select id="f_pre_sel" class="pre-sel" aria-label="نوع العينة (البادئة)"></select>
-            <input type="text" id="f_num" inputmode="numeric" placeholder="2368" maxlength="7">
+            <input type="text" id="f_num" inputmode="numeric" placeholder="9999" maxlength="7">
             <span class="dash">-</span>
             <input type="text" id="f_year" inputmode="numeric" maxlength="2" aria-label="السنة">
           </div>
@@ -397,7 +397,7 @@ if(!(S.v>=2)){ /* one-time move to the readable typography; layout and calibrati
 const YY=String(new Date().getFullYear()).slice(-2);
 let queue=store.get('queue',null);
 if(!Array.isArray(queue)){
-  queue=[{id:uid(),example:true,name:'AHMAD MOHAMMAD SALEH',pre:'',num:'2368',year:YY,
+  queue=[{id:uid(),example:true,name:'تجربة',pre:'',num:'9999',year:YY,
     orders:[{blocks:'A1-A3, B1-B2',levels:1,stain:'H&E'},{blocks:'A2',levels:3,stain:'H&E'},{blocks:'B1',levels:1,stain:'PAS'}]}];
 }
 let skip=+store.get('skip',0)||0;
@@ -580,10 +580,11 @@ function orderRow(o={blocks:'',levels:1,copies:1,stain:'H&E'}){
   d.querySelector('.x').onclick=()=>{ if($('#orders').children.length>1){d.remove();liveCount()} };
   $('#orders').appendChild(d);
 }
+function enDigits(v){return String(v).replace(/[\u0660-\u0669]/g,d=>d.charCodeAt(0)-0x660).replace(/[\u06F0-\u06F9]/g,d=>d.charCodeAt(0)-0x6F0)}
 function readForm(){
   const orders=[...document.querySelectorAll('#orders .order')].map(r=>({
     blocks:r.querySelector('.o-b').value.trim(), levels:parseInt(r.querySelector('.o-l').value)||1, copies:parseInt(r.querySelector('.o-c').value)||1, stain:r.querySelector('.o-s').value.trim()||'H&E'}));
-  return {name:$('#f_name').value.trim(),pre:getPre('f'),num:$('#f_num').value.trim(),year:$('#f_year').value.trim(),orders};
+  return {name:$('#f_name').value.trim()||'تجربة',pre:getPre('f'),num:enDigits($('#f_num').value.trim())||'9999',year:enDigits($('#f_year').value.trim())||YY,orders};
 }
 function liveCount(){
   const f=readForm(); let ok=true;
@@ -603,13 +604,13 @@ function resetForm(){
 $('#caseForm').addEventListener('input',liveCount);
 $('#addOrder').onclick=()=>{orderRow({blocks:'',levels:1,copies:1,stain:''});liveCount()};
 $('#cancelEdit').onclick=resetForm;
-$('#f_num').addEventListener('input',e=>{
+$('#f_num').addEventListener('input',e=>{ const ar=enDigits(e.target.value); if(ar!==e.target.value)e.target.value=ar;
   const m=e.target.value.match(/^(\d+)\s*[-\/]\s*(\d{2})$/); if(m){e.target.value=m[1];$('#f_year').value=m[2]}
 });
 $('#caseForm').addEventListener('submit',e=>{
   e.preventDefault();
   const f=readForm(), err=$('#formErr');
-  if(!/^\d{1,7}$/.test(f.num)){err.textContent='رقم العينة مطلوب (أرقام فقط).';$('#f_num').focus();return}
+  if(!/^\d{1,7}$/.test(f.num)){err.textContent='رقم العينة أرقام فقط.';$('#f_num').focus();return}
   if(!/^\d{2}$/.test(f.year)){err.textContent='السنة رقمان، مثل '+YY+'.';$('#f_year').focus();return}
   if(!liveCount()){err.textContent='صحّح صيغة الكاسيتات المظللة.';return}
   err.textContent='';
