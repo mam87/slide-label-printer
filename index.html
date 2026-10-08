@@ -92,6 +92,9 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .qi .meta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .chip{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;background:var(--eosin-soft);color:var(--eosin);font-weight:600}
 .qi.editing{border-color:var(--hema)}
+.qi.fav{grid-template-columns:1fr}
+.qi.fav .row{justify-content:flex-start;flex-wrap:wrap}
+.chip{white-space:nowrap}
 .empty-q{color:var(--muted);font-size:12.5px;padding:10px;border:1px dashed var(--line);border-radius:8px;text-align:center}
 
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
@@ -281,6 +284,22 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       <p class="hint" id="r_info">تُطبع الملصقات بدون اسم مريض، ويكبر رقم العينة ليملأ الملصق.</p>
       <p class="err" id="r_err"></p>
       <button class="btn small" type="button" id="rangeAdd">أضف السلسلة إلى القائمة</button>
+    </details>
+
+    <details class="panel" id="favPanel">
+      <summary>الإعدادات المفضلة</summary>
+      <p class="hint" style="margin-bottom:8px">احفظ إعدادات الخطوط والأحجام والورقة والمعايرة باسم، وارجع إليها بضغطة.</p>
+      <div class="row" style="flex-wrap:nowrap">
+        <input type="text" id="favName" dir="auto" placeholder="اسم المفضلة، مثل: ورق المطبعة – خط كبير" maxlength="40" style="flex:1;min-width:0">
+        <button class="btn small primary" type="button" id="favSave">حفظ</button>
+      </div>
+      <p class="err" id="favMsg"></p>
+      <div class="queue" id="favList"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn small" type="button" id="favExport">تصدير المفضلات (ملف)</button>
+        <label class="btn small" for="favFile" style="display:inline-flex;align-items:center">استيراد مفضلات<input type="file" id="favFile" accept=".json,application/json" hidden></label>
+      </div>
+      <p class="hint" style="margin-top:6px">المفضلات محفوظة في هذا المتصفح فقط. لنقلها إلى جهاز آخر صدّرها ثم استوردها هناك.</p>
     </details>
 
     <details class="panel" id="fontPanel">
@@ -508,11 +527,11 @@ function labelHTML(sl,st,i,pick){
 /* ---------- render sheets ---------- */
 function renderSample(){
   const box=$('#sampleBox'); if(!box)return;
-  const k=window.innerWidth<600?1.7:2.4, mm=96/25.4;
+  const k=1, mm=96/25.4;
   const sl={c:{name:'تجربة',pre:'',num:'9999',year:YY},block:'A1',level:'L2',stain:'H&E'};
   box.style.width=(S.lw*mm*k)+'px'; box.style.height=(S.lh*mm*k)+'px';
   box.innerHTML=`<div class="sample-in" style="width:${S.lw}mm;height:${S.lh}mm;transform:scale(${k})">${labelHTML(sl,`left:0;top:0;width:${S.lw}mm;height:${S.lh}mm`,-1,false)}</div>`;
-  $('#sampleCap').textContent='معاينة حية (مكبّرة)';
+  $('#sampleCap').textContent='معاينة حية بالحجم الطبيعي';
 }
 function render(){
   applyFonts(); renderSample();
@@ -922,7 +941,83 @@ $('#bannerYes').onclick=()=>{skip=+$('#banner').dataset.next||0;queue=[];save();
 $('#bannerNo').onclick=()=>{$('#banner').hidden=true};
 
 /* ---------- init ---------- */
-loadSettingsUI(); dateUI(); fillPreSelects(); setPre('f',lastPre); resetForm(); render();
+/* ---------- favourite settings ---------- */
+const FAV_SKIP=['dateMode','dateOffset','dateFixed','dateCustom','dateSetOn'];
+let favs=store.get('favs',[]); if(!Array.isArray(favs))favs=[];
+let favActive=store.get('favActive','');
+const favPick=()=>Object.fromEntries(Object.entries(S).filter(([k])=>!FAV_SKIP.includes(k)));
+function favSaveAll(){store.set('favs',favs);store.set('favActive',favActive)}
+function favMsg(t,ok){const m=$('#favMsg');m.textContent=t;m.style.color=ok?'var(--ok)':'var(--eosin)'}
+function favApply(f){
+  const keep=Object.fromEntries(FAV_SKIP.map(k=>[k,S[k]]));
+  S=Object.assign({},DEF,f.settings,keep); favActive=f.id; favSaveAll();
+  loadSettingsUI(); dateUI(); fillPreSelects(); save(); render(); renderQueue(); renderFavs();
+}
+let favDelArmed='';
+function renderFavs(){
+  const L=$('#favList');
+  if(!favs.length){L.innerHTML='<div class="empty-q">لا توجد مفضلات بعد. اكتب اسماً واضغط حفظ.</div>';return}
+  L.innerHTML=favs.map((f,i)=>`<div class="qi fav${f.id===favActive?' editing':''}">
+    <div style="min-width:0"><div class="nm" dir="auto">${esc(f.name)}${f.id===favActive?' <span class="chip">مستخدمة الآن</span>':''}</div>
+      <div class="meta"><span>${esc(f.settings.lw)} × ${esc(f.settings.lh)} مم</span><span>حُفظت ${esc(f.saved||'')}</span></div></div>
+    <div class="row" style="gap:4px">
+      <button class="btn small primary" type="button" data-fav-load="${f.id}">تحميل</button>
+      <button class="btn small" type="button" data-fav-upd="${f.id}" title="استبدال محتواها بالإعدادات الحالية">تحديث</button>
+      <button class="btn small" type="button" data-fav-ren="${f.id}" title="إعادة التسمية">تسمية</button>
+      <button class="btn small" type="button" data-fav-up="${i}" ${i===0?'disabled':''} aria-label="للأعلى">▲</button>
+      <button class="btn small" type="button" data-fav-down="${i}" ${i===favs.length-1?'disabled':''} aria-label="للأسفل">▼</button>
+      <button class="btn small danger" type="button" data-fav-del="${f.id}">${favDelArmed===f.id?'تأكيد الحذف؟':'حذف'}</button>
+    </div></div>`).join('');
+}
+$('#favSave').onclick=()=>{
+  const name=$('#favName').value.trim();
+  if(!name){favMsg('اكتب اسماً للمفضلة أولاً.');$('#favName').focus();return}
+  const ex=favs.find(f=>f.name===name);
+  const rec={id:ex?ex.id:uid(),name,settings:favPick(),saved:fmtDate(new Date())};
+  if(ex)favs[favs.indexOf(ex)]=rec; else favs.push(rec);
+  favActive=rec.id; favSaveAll(); renderFavs(); $('#favName').value='';
+  favMsg(ex?'حُدّثت المفضلة «'+name+'».':'حُفظت المفضلة «'+name+'».',true);
+};
+$('#favName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#favSave').click()}});
+$('#favList').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return; const d=b.dataset;
+  if(d.favLoad){const f=favs.find(x=>x.id===d.favLoad);if(f){favApply(f);favMsg('حُمّلت «'+f.name+'».',true)}}
+  if(d.favUpd){const f=favs.find(x=>x.id===d.favUpd);if(f){f.settings=favPick();f.saved=fmtDate(new Date());favActive=f.id;favSaveAll();renderFavs();favMsg('حُدّثت «'+f.name+'» بالإعدادات الحالية.',true)}}
+  if(d.favRen){const f=favs.find(x=>x.id===d.favRen);if(f){$('#favName').value=f.name;$('#favName').focus();$('#favName').dataset.ren=f.id;favMsg('عدّل الاسم في الخانة واضغط Enter أو «حفظ».',true)}}
+  if(d.favUp!=null){const i=+d.favUp;if(i>0){[favs[i-1],favs[i]]=[favs[i],favs[i-1]];favSaveAll();renderFavs()}}
+  if(d.favDown!=null){const i=+d.favDown;if(i<favs.length-1){[favs[i+1],favs[i]]=[favs[i],favs[i+1]];favSaveAll();renderFavs()}}
+  if(d.favDel){
+    if(favDelArmed!==d.favDel){favDelArmed=d.favDel;renderFavs();setTimeout(()=>{if(favDelArmed===d.favDel){favDelArmed='';renderFavs()}},3000);return}
+    const f=favs.find(x=>x.id===d.favDel); favs=favs.filter(x=>x.id!==d.favDel); if(favActive===d.favDel)favActive='';
+    favDelArmed=''; favSaveAll(); renderFavs(); favMsg('حُذفت «'+(f?f.name:'')+'».',true);
+  }
+});
+/* rename: saving with the rename flag changes only the name */
+const _favSave=$('#favSave').onclick;
+$('#favSave').onclick=()=>{
+  const rid=$('#favName').dataset.ren;
+  if(rid){const f=favs.find(x=>x.id===rid), name=$('#favName').value.trim(); delete $('#favName').dataset.ren;
+    if(f&&name){const old=f.name;f.name=name;favSaveAll();renderFavs();$('#favName').value='';favMsg('غُيّر الاسم من «'+old+'» إلى «'+name+'».',true);return}}
+  _favSave();
+};
+$('#favExport').onclick=()=>{
+  if(!favs.length){favMsg('لا توجد مفضلات للتصدير.');return}
+  const blob=new Blob([JSON.stringify({app:'slide-label-printer',version:1,favs},null,1)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='slide-label-favourites.json'; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500); favMsg('صُدّرت '+favs.length+' مفضلة.',true);
+};
+$('#favFile').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f)return;
+  try{const data=JSON.parse(await f.text()); const list=Array.isArray(data)?data:data.favs;
+    if(!Array.isArray(list))throw 0; let n=0;
+    list.forEach(x=>{if(x&&x.name&&x.settings&&typeof x.settings==='object'){const ex=favs.find(y=>y.name===x.name);
+      const rec={id:ex?ex.id:uid(),name:String(x.name).slice(0,40),settings:x.settings,saved:x.saved||fmtDate(new Date())};
+      if(ex)favs[favs.indexOf(ex)]=rec; else favs.push(rec); n++}});
+    favSaveAll(); renderFavs(); favMsg('استُوردت '+n+' مفضلة.',true);
+  }catch(err){favMsg('الملف غير صالح. اختر ملف مفضلات صدّرته من هذا النظام.')}
+});
+
+loadSettingsUI(); dateUI(); fillPreSelects(); setPre('f',lastPre); resetForm(); render(); renderFavs();
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{fitText()});
 })();
 </script>
