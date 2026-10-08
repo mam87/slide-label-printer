@@ -93,6 +93,17 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .chip{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;background:var(--eosin-soft);color:var(--eosin);font-weight:600}
 .qi.editing{border-color:var(--hema)}
 .qi.fav{grid-template-columns:1fr}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--sunk);padding:4px;border-radius:10px}
+.tabs button,.seg button{border:0;background:transparent;color:var(--muted);font-weight:600;cursor:pointer;border-radius:7px;padding:9px 6px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.tabs button[aria-selected="true"],.seg button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(30,20,60,.12)}
+.seg{display:flex;gap:4px;border:1px solid var(--line);border-radius:9px;padding:3px;background:var(--surface)}
+.seg button{flex:1;padding:7px 6px;font-size:13px}
+.seg button[aria-selected="true"]{background:var(--sunk);box-shadow:none}
+.badge{min-width:1.7em;padding:0 .45em;border-radius:99px;background:var(--hema);color:var(--on-hema);font-size:11px;line-height:1.7;font-family:var(--f-mono)}
+.pane,.subpane{display:flex;flex-direction:column;gap:16px}
+.pane[data-pane="q"] .queue{max-height:none}
+@media (max-width:600px){.tabs button{font-size:13px;padding:8px 4px;line-height:1.3}.seg button{font-size:12.5px;padding:7px 4px}}
+@media (min-width:901px){.grid>.col.no-print{position:sticky;top:calc(var(--hdr,0px) + 4px);max-height:calc(100vh - var(--hdr,0px) - 12px);overflow-y:auto;overscroll-behavior:contain;padding-inline-end:4px;padding-bottom:16px}}
 .qi.fav .row{justify-content:flex-start;flex-wrap:wrap}
 .chip{white-space:nowrap}
 .empty-q{color:var(--muted);font-size:12.5px;padding:10px;border:1px dashed var(--line);border-radius:8px;text-align:center}
@@ -208,6 +219,19 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 <main class="grid">
   <div class="col no-print">
 
+    <nav class="tabs" role="tablist" aria-label="أقسام لوحة التحكم">
+      <button type="button" role="tab" data-tab="in" aria-selected="true">إدخال العينات</button>
+      <button type="button" role="tab" data-tab="q">قائمة الطباعة <span class="badge" id="qBadge">0</span></button>
+      <button type="button" role="tab" data-tab="set">الإعدادات</button>
+    </nav>
+
+    <div class="pane" data-pane="in">
+      <div class="seg" role="tablist" aria-label="طريقة الإدخال">
+        <button type="button" data-sub="one" aria-selected="true">عينة واحدة</button>
+        <button type="button" data-sub="range">سلسلة أرقام</button>
+        <button type="button" data-sub="bulk">Excel وإدخال جماعي</button>
+      </div>
+      <div class="subpane" data-subpane="one">
     <form class="panel" id="caseForm" autocomplete="off">
       <h2><span id="formTitle">عينة جديدة</span><small id="formCount"></small></h2>
       <div class="fields">
@@ -242,31 +266,10 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
         <button class="btn ghost" type="button" id="cancelEdit" hidden>إلغاء التعديل</button>
       </div>
     </form>
-
-    <section class="panel">
-      <h2>قائمة الطباعة <small id="qSummary"></small></h2>
-      <div class="queue" id="queue"></div>
-      <div class="row" style="margin-top:10px">
-        <button class="btn small" type="button" id="xlsExport">تصدير القائمة إلى Excel</button>
-        <button class="btn small danger" type="button" id="clearQ">تفريغ القائمة</button>
       </div>
-    </section>
-
-    <details class="panel">
-      <summary>إدخال جماعي (لصق من Excel)</summary>
-      <p class="hint" style="margin-bottom:8px">سطر لكل عينة، والأعمدة مفصولة بـ Tab أو <span class="mono">;</span><br>
-      الاسم ; الرقم ; الكاسيتات ; المستويات ; الصبغة ; النسخ</p>
-      <textarea id="bulk" placeholder="SARA KHALED ODEH; 2369-26; A1-A4, B1; 1; H&E&#10;OMAR NABIL; 2370; A1-A2; 3; H&E"></textarea>
-      <p class="err" id="bulkErr"></p>
-      <div class="row">
-        <button class="btn small" type="button" id="bulkAdd">أضف الأسطر</button>
-        <button class="btn small" type="button" id="xlsTemplate">تحميل نموذج Excel</button>
-        <label class="btn small" for="xlsFile" style="display:inline-flex;align-items:center">رفع ملف Excel<input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" hidden></label>
-      </div>
-    </details>
-
-    <details class="panel" id="rangePanel" open>
-      <summary>سلسلة أرقام (من … إلى)</summary>
+      <div class="subpane" data-subpane="range" hidden>
+    <section class="panel" id="rangePanel">
+      <h2>سلسلة أرقام (من … إلى)</h2>
       <div class="fields">
         <label class="f">من رقم<input type="text" id="r_from" inputmode="numeric" class="mono" placeholder="5000" dir="ltr"></label>
         <label class="f">إلى رقم<input type="text" id="r_to" inputmode="numeric" class="mono" placeholder="5100" dir="ltr"></label>
@@ -284,8 +287,36 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       <p class="hint" id="r_info">تُطبع الملصقات بدون اسم مريض، ويكبر رقم العينة ليملأ الملصق.</p>
       <p class="err" id="r_err"></p>
       <button class="btn small" type="button" id="rangeAdd">أضف السلسلة إلى القائمة</button>
-    </details>
+    </section>
+      </div>
+      <div class="subpane" data-subpane="bulk" hidden>
+    <section class="panel" id="bulkPanel">
+      <h2>إدخال جماعي (لصق من Excel)</h2>
+      <p class="hint" style="margin-bottom:8px">سطر لكل عينة، والأعمدة مفصولة بـ Tab أو <span class="mono">;</span><br>
+      الاسم ; الرقم ; الكاسيتات ; المستويات ; الصبغة ; النسخ</p>
+      <textarea id="bulk" placeholder="SARA KHALED ODEH; 2369-26; A1-A4, B1; 1; H&E&#10;OMAR NABIL; 2370; A1-A2; 3; H&E"></textarea>
+      <p class="err" id="bulkErr"></p>
+      <div class="row">
+        <button class="btn small" type="button" id="bulkAdd">أضف الأسطر</button>
+        <button class="btn small" type="button" id="xlsTemplate">تحميل نموذج Excel</button>
+        <label class="btn small" for="xlsFile" style="display:inline-flex;align-items:center">رفع ملف Excel<input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" hidden></label>
+      </div>
+    </section>
+      </div>
+    </div>
 
+    <div class="pane" data-pane="q" hidden>
+    <section class="panel">
+      <h2>قائمة الطباعة <small id="qSummary"></small></h2>
+      <div class="queue" id="queue"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn small" type="button" id="xlsExport">تصدير القائمة إلى Excel</button>
+        <button class="btn small danger" type="button" id="clearQ">تفريغ القائمة</button>
+      </div>
+    </section>
+    </div>
+
+    <div class="pane" data-pane="set" hidden>
     <details class="panel" id="favPanel">
       <summary>الإعدادات المفضلة</summary>
       <p class="hint" style="margin-bottom:8px">احفظ إعدادات الخطوط والأحجام والورقة والمعايرة باسم، وارجع إليها بضغطة.</p>
@@ -347,6 +378,9 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
         </label>
         <label class="f">العرض (مم)<input type="number" step="0.5" id="set_lw"></label>
         <label class="f">الارتفاع (مم)<input type="number" step="0.5" id="set_lh"></label>
+        <label style="grid-column:1/-1;display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" id="set_autoMargin"> هوامش تلقائية: توسيط الملصقات في ورقة A4 حسب القياس</label>
+        <label class="f">أقل هامش مسموح (مم)<input type="number" step="0.5" min="0" max="40" id="set_minMargin"></label>
+        <p class="hint" id="marginInfo" style="grid-column:1/-1;margin:0"></p>
         <label class="f">هامش يمين/يسار (مم)<input type="number" step="0.5" id="set_ml"></label>
         <label class="f">هامش أعلى/أسفل (مم)<input type="number" step="0.5" id="set_mt"></label>
         <label class="f">مسافة أفقية (مم)<input type="number" step="0.5" id="set_gx"></label>
@@ -371,6 +405,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       </div>
       <p class="hint" style="margin-top:8px">اطبع صفحة المعايرة على ورق عادي وضعها فوق ورقة الستيكرز مقابل الضوء. إذا انزاحت الخطوط عدّل X (يمين/يسار) أو Y (أعلى/أسفل).</p>
     </details>
+    </div>
   </div>
 
   <div class="col">
@@ -425,7 +460,7 @@ const store={
 };
 function sizesFor(w,h){const k=Math.min(w/24,h/19),r=v=>Math.round(v*k*2)/2;return {szLab:r(4.5),szCase:r(11),szBig:r(14),szName:r(7),szBlk:r(9),szLv:r(9),szSt:r(5.5),szDt:r(5.5),szFt:r(5.5)}}
 const DEF={lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,offX:0,offY:0,
-  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,szLv:9,szSt:5.5,szDt:5.5,autofit:true,maxFit:false,v:3,
+  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,szLv:9,szSt:5.5,szDt:5.5,autofit:true,maxFit:false,autoMargin:true,minMargin:5,v:4,
   lab:'JUH · Histopathology',prefixes:'S=Skin\nM=Bone marrow\nOR=Oral biopsy\nC=Cytology\nF=FNA',showLab:false,showDate:true,lvlSingle:false,upper:true,cut:false};
 let S=Object.assign({},DEF,store.get('settings',{}));
 if(!(S.v>=2)){ /* one-time move to the readable typography; layout and calibration are kept */
@@ -435,6 +470,7 @@ if(!(S.v>=2)){ /* one-time move to the readable typography; layout and calibrati
 if(!(S.v>=3)){ /* split footer and level sizes out of the shared ones */
   Object.assign(S,{szLv:+S.szBlk||9,szSt:+S.szFt||5.5,szDt:+S.szFt||5.5,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,v:3}); store.set('settings',S);
 }
+if(!(S.v>=4)){S.autoMargin=true;S.minMargin=S.minMargin??5;S.v=4;store.set('settings',S)}
 const YY=String(new Date().getFullYear()).slice(-2);
 let queue=store.get('queue',null);
 if(!Array.isArray(queue)){
@@ -497,12 +533,28 @@ function slidesFor(c){
 
 /* ---------- geometry ---------- */
 function geo(){
-  const cols=S.cols>0?+S.cols:Math.max(1,Math.floor((210-2*S.ml+ +S.gx)/(+S.lw+ +S.gx)+1e-6));
-  const rows=S.rows>0?+S.rows:Math.max(1,Math.floor((297-2*S.mt+ +S.gy)/(+S.lh+ +S.gy)+1e-6));
-  return {cols,rows,per:cols*rows};
+  const lw=+S.lw, lh=+S.lh, gx=+S.gx, gy=+S.gy;
+  if(S.autoMargin){ /* fit as many labels as the minimum margin allows, then centre them on the sheet */
+    const mm=Math.max(0,+S.minMargin||0);
+    const cols=S.cols>0?+S.cols:Math.max(1,Math.floor((210-2*mm+gx)/(lw+gx)+1e-6));
+    const rows=S.rows>0?+S.rows:Math.max(1,Math.floor((297-2*mm+gy)/(lh+gy)+1e-6));
+    const ml=Math.max(0,(210-(cols*lw+(cols-1)*gx))/2), mt=Math.max(0,(297-(rows*lh+(rows-1)*gy))/2);
+    return {cols,rows,per:cols*rows,ml,mt};
+  }
+  const cols=S.cols>0?+S.cols:Math.max(1,Math.floor((210-2*S.ml+gx)/(lw+gx)+1e-6));
+  const rows=S.rows>0?+S.rows:Math.max(1,Math.floor((297-2*S.mt+gy)/(lh+gy)+1e-6));
+  return {cols,rows,per:cols*rows,ml:+S.ml,mt:+S.mt};
+}
+function syncMarginUI(){
+  const g=geo(), r=v=>Math.round(v*100)/100, ml=$('#set_ml'), mt=$('#set_mt'), mm=$('#set_minMargin');
+  if(!ml)return;
+  ml.disabled=mt.disabled=!!S.autoMargin; mm.disabled=!S.autoMargin;
+  if(S.autoMargin){ml.value=r(g.ml);mt.value=r(g.mt)}
+  const usedW=g.cols*S.lw+(g.cols-1)*S.gx, usedH=g.rows*S.lh+(g.rows-1)*S.gy;
+  $('#marginInfo').textContent=`${g.cols} × ${g.rows} = ${g.per} ملصقاً · الهامش يمين/يسار ${r(g.ml)} مم، أعلى/أسفل ${r(g.mt)} مم`+(usedW>210.01||usedH>297.01?' · تنبيه: الملصقات أكبر من الورقة':'');
 }
 function pos(i,g){const r=Math.floor(i/g.cols),c=i%g.cols;
-  return {x:+S.ml+c*(+S.lw+ +S.gx)+ +S.offX, y:+S.mt+r*(+S.lh+ +S.gy)+ +S.offY}}
+  return {x:g.ml+c*(+S.lw+ +S.gx)+ +S.offX, y:g.mt+r*(+S.lh+ +S.gy)+ +S.offY}}
 function fmtDate(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}
 function isoLocal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function labelDate(){
@@ -534,7 +586,7 @@ function renderSample(){
   $('#sampleCap').textContent='معاينة حية بالحجم الطبيعي';
 }
 function render(){
-  applyFonts(); renderSample();
+  applyFonts(); renderSample(); syncMarginUI();
   const g=geo();
   const all=calib?[]:queue.flatMap(slidesFor);
   if(skip>=g.per)skip=g.per-1;
@@ -713,7 +765,7 @@ $('#caseForm').addEventListener('submit',e=>{
 /* ---------- queue ---------- */
 function renderQueue(){
   const q=$('#queue');
-  if(!queue.length){q.innerHTML='<div class="empty-q">القائمة فارغة. أضف أول عينة من النموذج أعلاه.</div>';$('#qSummary').textContent='';return}
+  if(!queue.length){q.innerHTML='<div class="empty-q">القائمة فارغة. أضف أول عينة من تبويب «إدخال العينات».</div>';$('#qSummary').textContent='';$('#qBadge').textContent='0';return}
   let tot=0;
   q.innerHTML=queue.map(c=>{
     const sl=slidesFor(c); tot+=sl.length;
@@ -723,7 +775,7 @@ function renderQueue(){
         <div class="meta"><span class="mono">${esc(caseNo(c))}</span><span>${blocks.length} كاسيت · ${sl.length} شريحة</span>${c.example?'<span class="chip">مثال</span>':''}</div></div>
       <div class="row"><button class="btn small" type="button" data-edit="${c.id}">تعديل</button><button class="btn small danger" type="button" data-del="${c.id}" aria-label="حذف">حذف</button></div>
     </div>`}).join('');
-  $('#qSummary').textContent=queue.length+' عينة · '+tot+' شريحة';
+  $('#qSummary').textContent=queue.length+' عينة · '+tot+' شريحة'; $('#qBadge').textContent=tot;
 }
 $('#queue').addEventListener('click',e=>{
   const d=e.target.closest('[data-del]'), ed=e.target.closest('[data-edit]');
@@ -732,7 +784,7 @@ $('#queue').addEventListener('click',e=>{
     editingId=c.id; $('#f_name').value=c.name; setPre('f',c.pre||''); $('#f_num').value=c.num; $('#f_year').value=c.year;
     $('#orders').innerHTML=''; c.orders.forEach(orderRow);
     $('#formTitle').textContent='تعديل '+caseNo(c); $('#submitBtn').textContent='حفظ التعديل'; $('#cancelEdit').hidden=false;
-    liveCount(); renderQueue(); $('#f_name').focus();}
+    liveCount(); renderQueue(); showTab('in','one'); $('#f_name').focus();}
 });
 let clearArmed=false;
 $('#clearQ').onclick=e=>{
@@ -853,10 +905,10 @@ $('#rangeAdd').onclick=()=>{
 };
 
 /* ---------- settings ---------- */
-const NUMS=['lw','lh','ml','mt','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szLv','szSt','szDt'], BOOLS=['showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','boldBlk','boldSt','boldDt','boldLab','autofit','maxFit'], SELS=['fNum','fText'];
+const NUMS=['lw','lh','ml','mt','minMargin','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szLv','szSt','szDt'], BOOLS=['autoMargin','showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','boldBlk','boldSt','boldDt','boldLab','autofit','maxFit'], SELS=['fNum','fText'];
 function loadSettingsUI(){
   NUMS.forEach(k=>$('#set_'+k).value=S[k]); BOOLS.forEach(k=>$('#set_'+k).checked=!!S[k]); SELS.forEach(k=>$('#set_'+k).value=S[k]); $('#set_lab').value=S.lab; $('#set_prefixes').value=S.prefixes; applyFonts();
-  const key=(+S.lw===24&&+S.lh===19&&+S.ml===15&&+S.mt===13&&+S.gx===2&&+S.gy===2)?'sheet91':S.lw+'x'+S.lh; $('#preset').value=[...$('#preset').options].some(o=>o.value===key)?key:'custom';
+  const gg=geo(), key=(+S.lw===24&&+S.lh===19&&Math.abs(gg.ml-15)<0.01&&Math.abs(gg.mt-13)<0.01&&+S.gx===2&&+S.gy===2)?'sheet91':S.lw+'x'+S.lh; $('#preset').value=[...$('#preset').options].some(o=>o.value===key)?key:'custom';
 }
 NUMS.forEach(k=>$('#set_'+k).addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){S[k]=v;if(k==='lw'||k==='lh')loadSettingsUI();save();render();renderQueue()}}));
 BOOLS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.checked;save();render();renderQueue()}));
@@ -883,7 +935,7 @@ $('#set_prefixes').addEventListener('change',e=>{S.prefixes=e.target.value;save(
 SELS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.value;applyFonts();save();render();if(document.fonts)document.fonts.load('10pt "'+S[k]+'"').then(fitText,()=>{})}));
 
 $('#fitSizes').onclick=()=>{Object.assign(S,sizesFor(+S.lw,+S.lh));loadSettingsUI();save();render()};
-$('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;if(e.target.value==='sheet91'){Object.assign(S,{lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0},sizesFor(24,19));loadSettingsUI();save();render();return}const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;Object.assign(S,sizesFor(w,h));loadSettingsUI();save();render()});
+$('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;if(e.target.value==='sheet91'){Object.assign(S,{lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,autoMargin:true,minMargin:5},sizesFor(24,19));loadSettingsUI();save();render();return}const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;Object.assign(S,sizesFor(w,h));loadSettingsUI();save();render()});
 $('#resetSet').onclick=()=>{S=Object.assign({},DEF);loadSettingsUI();fillPreSelects();save();render();renderQueue()};
 
 /* ---------- PDF download (exact A4, labels at their real mm positions) ---------- */
@@ -941,6 +993,19 @@ $('#bannerYes').onclick=()=>{skip=+$('#banner').dataset.next||0;queue=[];save();
 $('#bannerNo').onclick=()=>{$('#banner').hidden=true};
 
 /* ---------- init ---------- */
+/* ---------- tabs ---------- */
+function showTab(t,sub){
+  document.querySelectorAll('.tabs [data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
+  document.querySelectorAll('[data-pane]').forEach(p=>p.hidden=p.dataset.pane!==t);
+  if(sub){document.querySelectorAll('.seg [data-sub]').forEach(b=>b.setAttribute('aria-selected',b.dataset.sub===sub));
+    document.querySelectorAll('[data-subpane]').forEach(p=>p.hidden=p.dataset.subpane!==sub)}
+  store.set('tab',[t,sub||store.get('tab',['in','one'])[1]]);
+}
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)showTab(b.dataset.tab)});
+document.querySelector('.seg').addEventListener('click',e=>{const b=e.target.closest('[data-sub]');if(b)showTab('in',b.dataset.sub)});
+{const t=store.get('tab',['in','one']);showTab(t[0]||'in',t[1]||'one')}
+try{new ResizeObserver(()=>document.documentElement.style.setProperty('--hdr',document.querySelector('header.top').offsetHeight+'px')).observe(document.querySelector('header.top'))}catch(e){}
+
 /* ---------- favourite settings ---------- */
 const FAV_SKIP=['dateMode','dateOffset','dateFixed','dateCustom','dateSetOn'];
 let favs=store.get('favs',[]); if(!Array.isArray(favs))favs=[];
