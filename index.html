@@ -67,11 +67,12 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .hint{font-size:11.5px;color:var(--muted);margin:2px 0 0}
 
 .orders{display:flex;flex-direction:column;gap:8px;margin-top:4px}
-.order{display:grid;grid-template-columns:1fr 54px 54px 84px 30px;grid-template-areas:"b l c s x" "bad bad bad bad bad";gap:6px;align-items:end;background:var(--sunk);padding:8px;border-radius:8px}
+.order{display:grid;grid-template-columns:1fr 54px 54px 84px 30px;grid-template-areas:"b l c s x" "n n n n n" "bad bad bad bad bad";gap:6px;align-items:end;background:var(--sunk);padding:8px;border-radius:8px}
 .order .a-b{grid-area:b}.order .a-l{grid-area:l}.order .a-c{grid-area:c}.order .a-s{grid-area:s}.order .x{grid-area:x}
 .order input{background:var(--surface)}
 .order .x{height:36px;border:0;background:transparent;color:var(--muted);cursor:pointer;border-radius:6px;font-size:18px}
 .order .x:hover{color:var(--eosin);background:var(--surface)}
+.order .cnt{grid-area:n;display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted);cursor:pointer}
 .order .bad{grid-area:bad;color:var(--eosin);font-size:11.5px}
 
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -174,7 +175,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
   .sub{display:none}
   .slide-ico{width:40px;height:14px}
   .panel{padding:14px}
-  .order{grid-template-columns:1fr 1fr 30px;grid-template-areas:"b b x" "l c ." "s s ." "bad bad bad"}
+  .order{grid-template-columns:1fr 1fr 30px;grid-template-areas:"b b x" "l c ." "s s ." "n n n" "bad bad bad"}
   .toolbar{padding:10px 12px}
   .stat{gap:14px}
   .stat b{font-size:16px}
@@ -258,7 +259,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
           <button class="btn small ghost" type="button" id="addOrder">＋ سطر صبغة</button>
         </div>
         <div class="orders" id="orders"></div>
-        <p class="hint">اكتب: <span class="mono">A1-A3, B1-2, C</span> · أو <span class="mono">A-F</span> لأجزاء بدون رقم كاسيت · أو <span class="mono">A1-D2</span> = كل جزء من A إلى D بكاسيتين.<br>الرقم قبل الحرف مقبول أيضاً: <span class="mono">6A, 5B</span> · <span class="mono">1A-1D</span> · <span class="mono">1A-3B</span><br>عدد البلوكات: <span class="mono">4</span> = A إلى D · <span class="mono">4x2</span> = A1 إلى D2 · الحروف الصغيرة تُطبع صغيرة: <span class="mono">a1-a3</span></p>
+        <p class="hint">اكتب: <span class="mono">A1-A3, B1-2, C</span> · أو <span class="mono">A-F</span> لأجزاء بدون رقم كاسيت · أو <span class="mono">A1-D2</span> = كل جزء من A إلى D بكاسيتين.<br>الرقم قبل الحرف مقبول أيضاً: <span class="mono">6A, 5B</span> · <span class="mono">1A-1D</span> · <span class="mono">1A-3B</span><br>الرقم المنفرد كاسيت: <span class="mono">5</span> = 5 · عدد الأجزاء: <span class="mono">4x</span> = A إلى D · <span class="mono">4x2</span> = A1 إلى D2 · الحروف الصغيرة تُطبع صغيرة: <span class="mono">a1-a3</span></p>
       </div>
 
       <p class="err" id="formErr"></p>
@@ -495,18 +496,19 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function save(){store.set('settings',S);store.set('queue',queue);store.set('skip',skip)}
 
 /* ---------- block parsing ---------- */
-function parseBlocks(str){
+function parseBlocks(str,opt){
+  const asCount=!!(opt&&opt.count);
   const out=[],bad=[];
   const raw=String(str||'').replace(/[،؛;]/g,',').replace(/\s*[-–]\s*/g,'-').replace(/\s*[x×*]\s*/gi,'x');
   raw.split(/[,\s]+/).filter(Boolean).forEach(t0=>{
-    const lt=t0.replace(/^(\d{1,2})x(\d{1,2})$/i,''), lower=/[a-z]/.test(lt)&&!/[A-Z]/.test(lt), mode=S.letterCase||'asis';
+    const lt=t0.replace(/^(\d{1,2})x(\d{1,2})?$/i,''), lower=/[a-z]/.test(lt)&&!/[A-Z]/.test(lt), mode=S.letterCase||'asis';
     const toCase=v=>mode==='lower'||(mode==='asis'&&lower)?v.toLowerCase():v.toUpperCase();
     const list={push:v=>out.push(toCase(v))};
     const t=t0.toUpperCase();
-    const cnt=t.match(/^(\d{1,2})(?:X(\d{1,2}))?$/);
-    if(cnt){ /* a count: 4 = A to D, 4x2 = A1 A2 … D1 D2 */
-      const n=+cnt[1], k=cnt[2]?+cnt[2]:0;
-      if(n<1||n>26||(cnt[2]&&(k<1||k>60))){bad.push(t0);return}
+    const cnt=t.match(/^(\d{1,2})(X)?(\d{1,2})?$/);
+    if(cnt&&(cnt[2]||asCount)&&!(cnt[3]&&!cnt[2])){ /* 4x or 4x2 always a count; a bare 4 only when the row says so */ /* a count: 4 = A to D, 4x2 = A1 A2 … D1 D2 */
+      const n=+cnt[1], k=cnt[3]?+cnt[3]:0;
+      if(n<1||n>26||(cnt[3]&&(k<1||k>60))){bad.push(t0);return}
       for(let c=0;c<n;c++){const L=String.fromCharCode(65+c);if(!k)list.push(L);else for(let i=1;i<=k;i++)list.push(L+i)}
       return;
     }
@@ -544,7 +546,7 @@ function slidesFor(c){
   const out=[];
   c.orders.forEach((o,oi)=>{
     const lv=Math.max(1,Math.min(30,parseInt(o.levels)||1));
-    let {list}=parseBlocks(o.blocks); if(!list.length)list=[''];
+    let {list}=parseBlocks(o.blocks,{count:o.count}); if(!list.length)list=[''];
     const cp=Math.max(1,Math.min(20,parseInt(o.copies)||1));
     list.forEach(b=>{for(let l=1;l<=lv;l++)for(let k=0;k<cp;k++)out.push({c,block:b,level:(lv>1||S.lvlSingle)?'L'+l:'',stain:(o.stain||'H&E').trim(),key:bkey(b),oi,l})});
   });
@@ -742,6 +744,7 @@ function orderRow(o={blocks:'',levels:1,copies:1,stain:'H&E'}){
   <label class="f a-c">نسخ<input type="number" class="o-c mono" id="oc_${id}" min="1" max="20" value="${esc(o.copies||1)}" title="عدد النسخ من كل شريحة"></label>
   <label class="f a-s">الصبغة<input type="text" class="o-s" id="os_${id}" list="stains" dir="ltr" value="${esc(o.stain)}"></label>
   <button type="button" class="x" title="حذف السطر" aria-label="حذف السطر">×</button>
+  <label class="cnt"><input type="checkbox" class="o-n" id="on_${id}" ${o.count?'checked':''}> اعتبر الرقم عدد أجزاء: 4 يعني A إلى D</label>
   <div class="bad" hidden></div>`;
   d.querySelector('.x').onclick=()=>{ if($('#orders').children.length>1){d.remove();liveCount()} };
   $('#orders').appendChild(d);
@@ -749,13 +752,13 @@ function orderRow(o={blocks:'',levels:1,copies:1,stain:'H&E'}){
 function enDigits(v){return String(v).replace(/[\u0660-\u0669]/g,d=>d.charCodeAt(0)-0x660).replace(/[\u06F0-\u06F9]/g,d=>d.charCodeAt(0)-0x6F0)}
 function readForm(){
   const orders=[...document.querySelectorAll('#orders .order')].map(r=>({
-    blocks:r.querySelector('.o-b').value.trim(), levels:parseInt(r.querySelector('.o-l').value)||1, copies:parseInt(r.querySelector('.o-c').value)||1, stain:r.querySelector('.o-s').value.trim()||'H&E'}));
+    blocks:r.querySelector('.o-b').value.trim(), levels:parseInt(r.querySelector('.o-l').value)||1, copies:parseInt(r.querySelector('.o-c').value)||1, stain:r.querySelector('.o-s').value.trim()||'H&E', count:r.querySelector('.o-n').checked}));
   return {name:$('#f_name').value.trim()||'تجربة',pre:getPre('f'),num:enDigits($('#f_num').value.trim())||'9999',year:enDigits($('#f_year').value.trim())||YY,orders};
 }
 function liveCount(){
   const f=readForm(); let ok=true;
   document.querySelectorAll('#orders .order').forEach((r,i)=>{
-    const {bad}=parseBlocks(f.orders[i].blocks); const el=r.querySelector('.bad');
+    const {bad}=parseBlocks(f.orders[i].blocks,{count:f.orders[i].count}); const el=r.querySelector('.bad');
     el.hidden=!bad.length; el.textContent=bad.length?'غير مفهوم: '+bad.join('  '):''; if(bad.length)ok=false;
   });
   const n=slidesFor({...f,orders:f.orders}).length;
