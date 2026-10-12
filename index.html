@@ -258,7 +258,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
           <button class="btn small ghost" type="button" id="addOrder">＋ سطر صبغة</button>
         </div>
         <div class="orders" id="orders"></div>
-        <p class="hint">اكتب: <span class="mono">A1-A3, B1-2, C</span> · أو <span class="mono">A-F</span> لأجزاء بدون رقم كاسيت · أو <span class="mono">A1-D2</span> = كل جزء من A إلى D بكاسيتين.<br>الرقم قبل الحرف مقبول أيضاً: <span class="mono">6A, 5B</span> · <span class="mono">1A-1D</span> · <span class="mono">1A-3B</span></p>
+        <p class="hint">اكتب: <span class="mono">A1-A3, B1-2, C</span> · أو <span class="mono">A-F</span> لأجزاء بدون رقم كاسيت · أو <span class="mono">A1-D2</span> = كل جزء من A إلى D بكاسيتين.<br>الرقم قبل الحرف مقبول أيضاً: <span class="mono">6A, 5B</span> · <span class="mono">1A-1D</span> · <span class="mono">1A-3B</span><br>عدد البلوكات: <span class="mono">4</span> = A إلى D · <span class="mono">4x2</span> = A1 إلى D2 · الحروف الصغيرة تُطبع صغيرة: <span class="mono">a1-a3</span></p>
       </div>
 
       <p class="err" id="formErr"></p>
@@ -401,6 +401,12 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
         <label><input type="checkbox" id="set_showDate"> إظهار تاريخ الطباعة</label>
         <label><input type="checkbox" id="set_lvlSingle"> إظهار L1 حتى لو كان مستوى واحد</label>
         <label><input type="checkbox" id="set_upper"> تحويل الأسماء الإنجليزية لأحرف كبيرة</label>
+        <label style="flex-wrap:wrap">حروف الكاسيت:
+          <select id="set_letterCase" style="width:auto;padding:5px 8px">
+            <option value="asis">كما تُكتب (a1 صغيرة، A1 كبيرة)</option>
+            <option value="upper">كبيرة دائماً (A1)</option>
+            <option value="lower">صغيرة دائماً (a1)</option>
+          </select></label>
         <label><input type="checkbox" id="set_cut"> طباعة خط قص خفيف حول كل ملصق</label>
       </div>
       <div class="row" style="margin-top:14px">
@@ -464,7 +470,7 @@ const store={
 };
 function sizesFor(w,h){const k=Math.min(w/24,h/19),r=v=>Math.round(v*k*2)/2;return {szLab:r(4.5),szCase:r(11),szBig:r(14),szName:r(7),szBlk:r(9),szLv:r(9),szSt:r(5.5),szDt:r(5.5),szFt:r(5.5)}}
 const DEF={lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,offX:0,offY:0,
-  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,szLv:9,szSt:5.5,szDt:5.5,autofit:true,maxFit:false,lvInv:false,shortName:false,autoMargin:true,minMargin:5,v:4,
+  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,szLv:9,szSt:5.5,szDt:5.5,autofit:true,maxFit:false,letterCase:'asis',lvInv:false,shortName:false,autoMargin:true,minMargin:5,v:4,
   lab:'JUH · Histopathology',prefixes:'S=Skin\nM=Bone marrow\nOR=Oral biopsy\nC=Cytology\nF=FNA',showLab:false,showDate:true,lvlSingle:false,upper:true,cut:false};
 let S=Object.assign({},DEF,store.get('settings',{}));
 if(!(S.v>=2)){ /* one-time move to the readable typography; layout and calibration are kept */
@@ -490,15 +496,26 @@ function save(){store.set('settings',S);store.set('queue',queue);store.set('skip
 
 /* ---------- block parsing ---------- */
 function parseBlocks(str){
-  const list=[],bad=[];
-  const s=String(str||'').toUpperCase().replace(/[،؛;]/g,',').replace(/\s*[-–]\s*/g,'-');
-  s.split(/[,\s]+/).filter(Boolean).forEach(t=>{
+  const out=[],bad=[];
+  const raw=String(str||'').replace(/[،؛;]/g,',').replace(/\s*[-–]\s*/g,'-').replace(/\s*[x×*]\s*/gi,'x');
+  raw.split(/[,\s]+/).filter(Boolean).forEach(t0=>{
+    const lt=t0.replace(/^(\d{1,2})x(\d{1,2})$/i,''), lower=/[a-z]/.test(lt)&&!/[A-Z]/.test(lt), mode=S.letterCase||'asis';
+    const toCase=v=>mode==='lower'||(mode==='asis'&&lower)?v.toLowerCase():v.toUpperCase();
+    const list={push:v=>out.push(toCase(v))};
+    const t=t0.toUpperCase();
+    const cnt=t.match(/^(\d{1,2})(?:X(\d{1,2}))?$/);
+    if(cnt){ /* a count: 4 = A to D, 4x2 = A1 A2 … D1 D2 */
+      const n=+cnt[1], k=cnt[2]?+cnt[2]:0;
+      if(n<1||n>26||(cnt[2]&&(k<1||k>60))){bad.push(t0);return}
+      for(let c=0;c<n;c++){const L=String.fromCharCode(65+c);if(!k)list.push(L);else for(let i=1;i<=k;i++)list.push(L+i)}
+      return;
+    }
     const d=t.match(/^(\d{1,3})([A-Z]?)(?:-(\d{0,3})([A-Z]?))?$/);
     if(d){ /* number-first: 6A, 1A-1D, 1A-3B, 5-7 */
       const n1=+d[1], L1=d[2], n2=d[3]?+d[3]:n1, L2=d[4]||L1;
       if(!t.includes('-')){list.push(n1+L1);return}
-      if(!d[3]&&!d[4]){bad.push(t);return}
-      if(n2<n1||n2-n1>60||(!!L1!==!!L2)||(L1&&L2.charCodeAt(0)<L1.charCodeAt(0))){bad.push(t);return}
+      if(!d[3]&&!d[4]){bad.push(t0);return}
+      if(n2<n1||n2-n1>60||(!!L1!==!!L2)||(L1&&L2.charCodeAt(0)<L1.charCodeAt(0))){bad.push(t0);return}
       for(let n=n1;n<=n2;n++){
         if(!L1)list.push(String(n));
         else for(let c=L1.charCodeAt(0);c<=L2.charCodeAt(0);c++)list.push(n+String.fromCharCode(c));
@@ -506,21 +523,21 @@ function parseBlocks(str){
       return;
     }
     const m=t.match(/^([A-Z])(\d*)(?:-([A-Z])?(\d*))?$/);
-    if(!m){bad.push(t);return}
+    if(!m){bad.push(t0);return}
     let a=m[1],n1=m[2],b=m[3],n2=m[4];
     if(!t.includes('-')){list.push(a+n1);return}
     b=b||a;
     const c1=a.charCodeAt(0),c2=b.charCodeAt(0);
     const i1=n1?+n1:null, i2=n2?+n2:i1;
-    if(c2<c1||(i1!==null&&(i2<i1||i2-i1>60))){bad.push(t);return}
+    if(c2<c1||(i1!==null&&(i2<i1||i2-i1>60))){bad.push(t0);return}
     for(let c=c1;c<=c2;c++){
       const L=String.fromCharCode(c);
       if(i1===null)list.push(L); else for(let i=i1;i<=i2;i++)list.push(L+i);
     }
   });
-  return {list,bad};
+  return {list:out,bad};
 }
-function bkey(b){b=String(b);let m=b.match(/^(\d+)([A-Z]?)$/);if(m)return 100000+(+m[1])*100+(m[2]?m[2].charCodeAt(0)-64:0);
+function bkey(b){b=String(b).toUpperCase();let m=b.match(/^(\d+)([A-Z]?)$/);if(m)return 100000+(+m[1])*100+(m[2]?m[2].charCodeAt(0)-64:0);
   m=b.match(/^([A-Z]?)(\d*)/);return (m[1]?m[1].charCodeAt(0):0)*1000+(+m[2]||0)}
 function caseNo(c){return (c.pre?c.pre.toUpperCase():'')+c.num+'-'+c.year}
 function slidesFor(c){
@@ -916,7 +933,7 @@ $('#rangeAdd').onclick=()=>{
 };
 
 /* ---------- settings ---------- */
-const NUMS=['lw','lh','ml','mt','minMargin','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szLv','szSt','szDt'], BOOLS=['lvInv','shortName','autoMargin','showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','boldBlk','boldSt','boldDt','boldLab','autofit','maxFit'], SELS=['fNum','fText'];
+const NUMS=['lw','lh','ml','mt','minMargin','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szLv','szSt','szDt'], BOOLS=['lvInv','shortName','autoMargin','showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','boldBlk','boldSt','boldDt','boldLab','autofit','maxFit'], SELS=['fNum','fText','letterCase'];
 function loadSettingsUI(){
   NUMS.forEach(k=>$('#set_'+k).value=S[k]); BOOLS.forEach(k=>$('#set_'+k).checked=!!S[k]); SELS.forEach(k=>$('#set_'+k).value=S[k]); $('#set_lab').value=S.lab; $('#set_prefixes').value=S.prefixes; applyFonts();
   const gg=geo(), key=(+S.lw===24&&+S.lh===19&&Math.abs(gg.ml-15)<0.01&&Math.abs(gg.mt-13)<0.01&&+S.gx===2&&+S.gy===2)?'sheet91':S.lw+'x'+S.lh; $('#preset').value=[...$('#preset').options].some(o=>o.value===key)?key:'custom';
