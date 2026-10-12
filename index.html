@@ -363,7 +363,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       </div>
       <div class="row" style="margin-top:12px">
         <button class="btn small ghost" type="button" id="fitSizes">أحجام مناسبة لقياس الملصق</button>
-        <button class="btn small" type="button" id="bigPrint">وضع الخط الكبير (لضعف النظر)</button>
+        <button class="btn small" type="button" id="bigPrint">أكبر خط ممكن</button>
       </div>
       <p class="hint" style="margin-top:8px">الخطوط المكتوب بجانبها (ويندوز) تعمل فقط إذا كانت مثبتة على الجهاز. باقي الخطوط تُحمّل من الإنترنت.</p>
     </details>
@@ -972,7 +972,7 @@ $('#bigPrint').onclick=()=>{
     szCase:r(14),szBig:r(18),szName:r(8),szBlk:r(12),szLv:r(12),szSt:r(5),szDt:r(5),
     maxFit:true,autoMargin:S.autoMargin,autofit:true,lvInv:true,shortName:true,showLab:false});
   loadSettingsUI(); save(); render();
-  const name='خط كبير (لضعف النظر)', ex=favs.find(f=>f.name===name), rec={id:ex?ex.id:uid(),name,settings:favPick(),saved:fmtDate(new Date())};
+  const name='أكبر خط ممكن', ex=favs.find(f=>f.name===name), rec={id:ex?ex.id:uid(),name,settings:favPick(),saved:fmtDate(new Date())};
   if(ex)favs[favs.indexOf(ex)]=rec; else favs.push(rec); favActive=rec.id; favSaveAll(); renderFavs();
 };
 $('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;if(e.target.value==='sheet91'){Object.assign(S,{lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,autoMargin:true,minMargin:5},sizesFor(24,19));loadSettingsUI();save();render();return}const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;Object.assign(S,sizesFor(w,h));loadSettingsUI();save();render()});
