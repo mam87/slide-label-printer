@@ -145,6 +145,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .l-case.big{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;font-size:var(--sz-big)}
 .l-blk{display:flex;justify-content:center;gap:1.4mm;font-family:var(--lf-num,Arial),Arial,sans-serif;font-size:var(--sz-blk);font-weight:var(--w-blk);white-space:nowrap;align-items:center}
 .l-blk .lv{border:0.25mm solid #000;border-radius:0.6mm;padding:0 0.6mm;font-size:var(--sz-lv);line-height:1.05}
+.l-blk .lv.inv{background:#000;color:#fff;border-color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .l-ft .st{font-size:var(--sz-st);font-weight:var(--w-st);min-width:0;overflow:hidden}
 .l-ft .dt{font-size:var(--sz-dt);font-weight:var(--w-dt);flex-shrink:0;font-family:var(--lf-num,Arial),Arial,sans-serif;font-variant-numeric:tabular-nums}
 .l-ft{display:flex;justify-content:space-between;align-items:baseline;gap:0.8mm;margin-top:0.4mm;white-space:nowrap;overflow:hidden}
@@ -356,9 +357,12 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
         <label><input type="checkbox" id="set_boldLab"> اسم المختبر عريض</label>
         <label><input type="checkbox" id="set_autofit"> تصغير تلقائي إذا لم يتسع النص</label>
         <label><input type="checkbox" id="set_maxFit"> تكبير الاسم ورقم العينة لأقصى حجم تسمح به المساحة</label>
+        <label><input type="checkbox" id="set_lvInv"> المستوى بخلفية سوداء ونص أبيض (أوضح للعين)</label>
+        <label><input type="checkbox" id="set_shortName"> الاسم مختصر: الاسم الأول واسم العائلة فقط</label>
       </div>
       <div class="row" style="margin-top:12px">
         <button class="btn small ghost" type="button" id="fitSizes">أحجام مناسبة لقياس الملصق</button>
+        <button class="btn small" type="button" id="bigPrint">وضع الخط الكبير (لضعف النظر)</button>
       </div>
       <p class="hint" style="margin-top:8px">الخطوط المكتوب بجانبها (ويندوز) تعمل فقط إذا كانت مثبتة على الجهاز. باقي الخطوط تُحمّل من الإنترنت.</p>
     </details>
@@ -460,7 +464,7 @@ const store={
 };
 function sizesFor(w,h){const k=Math.min(w/24,h/19),r=v=>Math.round(v*k*2)/2;return {szLab:r(4.5),szCase:r(11),szBig:r(14),szName:r(7),szBlk:r(9),szLv:r(9),szSt:r(5.5),szDt:r(5.5),szFt:r(5.5)}}
 const DEF={lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,offX:0,offY:0,
-  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,szLv:9,szSt:5.5,szDt:5.5,autofit:true,maxFit:false,autoMargin:true,minMargin:5,v:4,
+  fNum:'Arial',fText:'Tahoma',szLab:4.5,szCase:11,szBig:14,szName:7,szBlk:9,szFt:5.5,boldCase:true,boldName:true,boldBlk:true,boldLab:true,boldSt:true,boldDt:true,szLv:9,szSt:5.5,szDt:5.5,autofit:true,maxFit:false,lvInv:false,shortName:false,autoMargin:true,minMargin:5,v:4,
   lab:'JUH · Histopathology',prefixes:'S=Skin\nM=Bone marrow\nOR=Oral biopsy\nC=Cytology\nF=FNA',showLab:false,showDate:true,lvlSingle:false,upper:true,cut:false};
 let S=Object.assign({},DEF,store.get('settings',{}));
 if(!(S.v>=2)){ /* one-time move to the readable typography; layout and calibration are kept */
@@ -555,6 +559,12 @@ function syncMarginUI(){
 }
 function pos(i,g){const r=Math.floor(i/g.cols),c=i%g.cols;
   return {x:g.ml+c*(+S.lw+ +S.gx)+ +S.offX, y:g.mt+r*(+S.lh+ +S.gy)+ +S.offY}}
+function shortName(n){ /* first + family name; keeps compounds like عبد الرحمن، أبو زيد، AL KHAWALDEH together */
+  const join=new Set(['عبد','عبدال','أبو','ابو','بن','ابن','بنت','آل','ال','ابنة','AL','EL','ABU','ABD','ABDEL','ABDUL','BIN','BINT','IBN','BEN','DE','VAN','VON']);
+  const w=String(n).trim().split(/\s+/).filter(Boolean), t=[];
+  for(let i=0;i<w.length;i++){let x=w[i];while(join.has(x.toUpperCase())&&i+1<w.length){x+=' '+w[++i]}t.push(x)}
+  return t.length>2?t[0]+' '+t[t.length-1]:t.join(' ');
+}
 function fmtDate(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}
 function isoLocal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function labelDate(){
@@ -568,11 +578,12 @@ function labelDate(){
 function labelHTML(sl,st,i,pick){
   const c=sl.c; let name=c.name||'';
   if(S.upper&&!/[؀-ۿ]/.test(name))name=name.toUpperCase();
+  if(S.shortName)name=shortName(name);
   return `<div class="lbl${S.cut?' cutline':''}${pick?' pick':''}" ${pick?`data-i="${i}"`:''} style="${st}">`+
     (S.showLab&&S.lab?`<div class="l-lab">${esc(S.lab)}</div>`:'')+
     `<div class="l-case fit${name?'':' big'}">${esc(caseNo(c))}</div>`+
     (name?`<div class="l-name fit" dir="auto">${esc(name)}</div>`:'')+
-    `<div class="l-blk">${sl.block?`<span>${esc(sl.block)}</span>`:''}${sl.level?`<span class="lv">${sl.level}</span>`:''}</div>`+
+    `<div class="l-blk">${sl.block?`<span>${esc(sl.block)}</span>`:''}${sl.level?`<span class="lv${S.lvInv?' inv':''}">${sl.level}</span>`:''}</div>`+
     `<div class="l-ft"><span class="st">${esc(sl.stain)}</span>${S.showDate&&labelDate()?`<span class="dt">${esc(labelDate())}</span>`:''}</div></div>`;
 }
 
@@ -905,7 +916,7 @@ $('#rangeAdd').onclick=()=>{
 };
 
 /* ---------- settings ---------- */
-const NUMS=['lw','lh','ml','mt','minMargin','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szLv','szSt','szDt'], BOOLS=['autoMargin','showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','boldBlk','boldSt','boldDt','boldLab','autofit','maxFit'], SELS=['fNum','fText'];
+const NUMS=['lw','lh','ml','mt','minMargin','gx','gy','cols','rows','offX','offY','szLab','szCase','szBig','szName','szBlk','szLv','szSt','szDt'], BOOLS=['lvInv','shortName','autoMargin','showLab','showDate','lvlSingle','upper','cut','boldCase','boldName','boldBlk','boldSt','boldDt','boldLab','autofit','maxFit'], SELS=['fNum','fText'];
 function loadSettingsUI(){
   NUMS.forEach(k=>$('#set_'+k).value=S[k]); BOOLS.forEach(k=>$('#set_'+k).checked=!!S[k]); SELS.forEach(k=>$('#set_'+k).value=S[k]); $('#set_lab').value=S.lab; $('#set_prefixes').value=S.prefixes; applyFonts();
   const gg=geo(), key=(+S.lw===24&&+S.lh===19&&Math.abs(gg.ml-15)<0.01&&Math.abs(gg.mt-13)<0.01&&+S.gx===2&&+S.gy===2)?'sheet91':S.lw+'x'+S.lh; $('#preset').value=[...$('#preset').options].some(o=>o.value===key)?key:'custom';
@@ -935,6 +946,15 @@ $('#set_prefixes').addEventListener('change',e=>{S.prefixes=e.target.value;save(
 SELS.forEach(k=>$('#set_'+k).addEventListener('change',e=>{S[k]=e.target.value;applyFonts();save();render();if(document.fonts)document.fonts.load('10pt "'+S[k]+'"').then(fitText,()=>{})}));
 
 $('#fitSizes').onclick=()=>{Object.assign(S,sizesFor(+S.lw,+S.lh));loadSettingsUI();save();render()};
+$('#bigPrint').onclick=()=>{
+  const k=Math.min(S.lw/24,S.lh/19), r=v=>Math.round(v*k*2)/2;
+  Object.assign(S,{fNum:'Roboto Condensed',fText:'Roboto Condensed',boldCase:true,boldName:true,boldBlk:true,boldSt:true,boldDt:true,
+    szCase:r(14),szBig:r(18),szName:r(8),szBlk:r(12),szLv:r(12),szSt:r(5),szDt:r(5),
+    maxFit:true,autoMargin:S.autoMargin,autofit:true,lvInv:true,shortName:true,showLab:false});
+  loadSettingsUI(); save(); render();
+  const name='خط كبير (لضعف النظر)', ex=favs.find(f=>f.name===name), rec={id:ex?ex.id:uid(),name,settings:favPick(),saved:fmtDate(new Date())};
+  if(ex)favs[favs.indexOf(ex)]=rec; else favs.push(rec); favActive=rec.id; favSaveAll(); renderFavs();
+};
 $('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;if(e.target.value==='sheet91'){Object.assign(S,{lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,autoMargin:true,minMargin:5},sizesFor(24,19));loadSettingsUI();save();render();return}const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;Object.assign(S,sizesFor(w,h));loadSettingsUI();save();render()});
 $('#resetSet').onclick=()=>{S=Object.assign({},DEF);loadSettingsUI();fillPreSelects();save();render();renderQueue()};
 
