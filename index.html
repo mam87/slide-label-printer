@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Roboto+Condensed:wght@400;700;900&family=Oswald:wght@500;700&family=Cairo:wght@600;800&family=Noto+Kufi+Arabic:wght@600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Atkinson+Hyperlegible:wght@400;700&family=Roboto+Condensed:wght@400;700;900&family=Oswald:wght@500;700&family=Cairo:wght@600;800&family=Noto+Kufi+Arabic:wght@600;800&display=swap">
 <style>
 /* Layout: work bench on one side (case entry, queue, settings), live A4 sheet preview on the other. Palette borrowed from H&E: hematoxylin violet + eosin pink. */
 :root{
@@ -338,8 +338,8 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
     <details class="panel" id="fontPanel">
       <summary>الخطوط وأحجامها</summary>
       <div class="setgrid">
-        <label class="f">خط رقم العينة والكاسيت<select id="set_fNum"><option value="Arial">Arial</option><option value="Arial Narrow">Arial Narrow (ويندوز)</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Calibri">Calibri (ويندوز)</option><option value="Segoe UI">Segoe UI (ويندوز)</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Consolas">Consolas (ويندوز)</option><option value="Roboto Condensed">Roboto Condensed</option><option value="Oswald">Oswald</option><option value="IBM Plex Mono">IBM Plex Mono</option><option value="Cairo">Cairo (عربي)</option><option value="Noto Kufi Arabic">Noto Kufi Arabic (عربي)</option><option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic (عربي)</option></select></label>
-        <label class="f">خط الاسم والنصوص<select id="set_fText"><option value="Arial">Arial</option><option value="Arial Narrow">Arial Narrow (ويندوز)</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Calibri">Calibri (ويندوز)</option><option value="Segoe UI">Segoe UI (ويندوز)</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Consolas">Consolas (ويندوز)</option><option value="Roboto Condensed">Roboto Condensed</option><option value="Oswald">Oswald</option><option value="IBM Plex Mono">IBM Plex Mono</option><option value="Cairo">Cairo (عربي)</option><option value="Noto Kufi Arabic">Noto Kufi Arabic (عربي)</option><option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic (عربي)</option></select></label>
+        <label class="f">خط رقم العينة والكاسيت<select id="set_fNum"><option value="Arial">Arial</option><option value="Arial Narrow">Arial Narrow (ويندوز)</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Calibri">Calibri (ويندوز)</option><option value="Segoe UI">Segoe UI (ويندوز)</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Consolas">Consolas (ويندوز)</option><option value="Atkinson Hyperlegible">Atkinson Hyperlegible (أرقام واضحة)</option><option value="Roboto Condensed">Roboto Condensed</option><option value="Oswald">Oswald</option><option value="IBM Plex Mono">IBM Plex Mono</option><option value="Cairo">Cairo (عربي)</option><option value="Noto Kufi Arabic">Noto Kufi Arabic (عربي)</option><option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic (عربي)</option></select></label>
+        <label class="f">خط الاسم والنصوص<select id="set_fText"><option value="Arial">Arial</option><option value="Arial Narrow">Arial Narrow (ويندوز)</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Calibri">Calibri (ويندوز)</option><option value="Segoe UI">Segoe UI (ويندوز)</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option><option value="Consolas">Consolas (ويندوز)</option><option value="Atkinson Hyperlegible">Atkinson Hyperlegible (أرقام واضحة)</option><option value="Roboto Condensed">Roboto Condensed</option><option value="Oswald">Oswald</option><option value="IBM Plex Mono">IBM Plex Mono</option><option value="Cairo">Cairo (عربي)</option><option value="Noto Kufi Arabic">Noto Kufi Arabic (عربي)</option><option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic (عربي)</option></select></label>
         <label class="f">رقم العينة (pt)<input type="number" step="0.5" min="3" max="30" id="set_szCase"></label>
         <label class="f">رقم العينة بدون اسم (pt)<input type="number" step="0.5" min="3" max="30" id="set_szBig"></label>
         <label class="f">اسم المريض (pt)<input type="number" step="0.5" min="3" max="20" id="set_szName"></label>
@@ -364,6 +364,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
       <div class="row" style="margin-top:12px">
         <button class="btn small ghost" type="button" id="fitSizes">أحجام مناسبة لقياس الملصق</button>
         <button class="btn small" type="button" id="bigPrint">أكبر خط ممكن</button>
+        <button class="btn small" type="button" id="boldNoHead">عريض بدون ترويسة</button>
       </div>
       <p class="hint" style="margin-top:8px">الخطوط المكتوب بجانبها (ويندوز) تعمل فقط إذا كانت مثبتة على الجهاز. باقي الخطوط تُحمّل من الإنترنت.</p>
     </details>
@@ -971,10 +972,23 @@ $('#bigPrint').onclick=()=>{
   Object.assign(S,{fNum:'Roboto Condensed',fText:'Roboto Condensed',boldCase:true,boldName:true,boldBlk:true,boldSt:true,boldDt:true,
     szCase:r(14),szBig:r(18),szName:r(8),szBlk:r(12),szLv:r(12),szSt:r(5),szDt:r(5),
     maxFit:true,autoMargin:S.autoMargin,autofit:true,lvInv:true,shortName:true,showLab:false});
-  loadSettingsUI(); save(); render();
-  const name='أكبر خط ممكن', ex=favs.find(f=>f.name===name), rec={id:ex?ex.id:uid(),name,settings:favPick(),saved:fmtDate(new Date())};
-  if(ex)favs[favs.indexOf(ex)]=rec; else favs.push(rec); favActive=rec.id; favSaveAll(); renderFavs();
+  quickFav('أكبر خط ممكن');
 };
+/* one-click look: no lab header, case number in Atkinson Hyperlegible Bold (unambiguous digits), name in IBM Plex Sans Arabic */
+$('#boldNoHead').onclick=()=>{
+  const k=Math.min(S.lw/24,S.lh/19), r=v=>Math.round(v*k*2)/2;
+  Object.assign(S,{fNum:'Atkinson Hyperlegible',fText:'IBM Plex Sans Arabic',showLab:false,
+    boldCase:true,boldName:true,boldBlk:true,boldSt:true,boldDt:false,
+    szCase:r(13),szBig:r(16),szName:r(7.5),szBlk:r(9.5),szLv:r(9.5),szSt:r(6),szDt:r(5.5),
+    maxFit:true,autofit:true,lvInv:false});
+  quickFav('عريض بدون ترويسة');
+  if(document.fonts)Promise.all([document.fonts.load('700 10pt "Atkinson Hyperlegible"'),document.fonts.load('700 10pt "IBM Plex Sans Arabic"','ع')]).then(fitText,()=>{});
+};
+function quickFav(name){ /* apply current S and keep it as a named favourite */
+  loadSettingsUI(); save(); render();
+  const ex=favs.find(f=>f.name===name), rec={id:ex?ex.id:uid(),name,settings:favPick(),saved:fmtDate(new Date())};
+  if(ex)favs[favs.indexOf(ex)]=rec; else favs.push(rec); favActive=rec.id; favSaveAll(); renderFavs();
+}
 $('#preset').addEventListener('change',e=>{if(e.target.value==='custom')return;if(e.target.value==='sheet91'){Object.assign(S,{lw:24,lh:19,ml:15,mt:13,gx:2,gy:2,cols:0,rows:0,autoMargin:true,minMargin:5},sizesFor(24,19));loadSettingsUI();save();render();return}const [w,h]=e.target.value.split('x').map(Number);S.lw=w;S.lh=h;Object.assign(S,sizesFor(w,h));loadSettingsUI();save();render()});
 $('#resetSet').onclick=()=>{S=Object.assign({},DEF);loadSettingsUI();fillPreSelects();save();render();renderQueue()};
 
